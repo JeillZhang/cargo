@@ -1,5 +1,7 @@
 //! Tests for normal registry dependencies.
 
+#![allow(deprecated)]
+
 use cargo::core::SourceId;
 use cargo_test_support::cargo_process;
 use cargo_test_support::paths::{self, CargoPathExt};
@@ -504,13 +506,13 @@ Caused by:
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
 [UPDATING] `[..]` index
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
 [DOWNLOADING] crates ...
 [DOWNLOADED] notyet v0.0.1 (registry `dummy-registry`)
 [COMPILING] notyet v0.0.1
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]s
-[PACKAGED] [..]
 ",
         )
         .run();
@@ -1146,7 +1148,7 @@ fn bad_license_file(registry: &TestRegistry) {
     p.cargo("publish -v")
         .replace_crates_io(registry.index_url())
         .with_status(101)
-        .with_stderr_contains("[ERROR] the license file `foo` does not exist")
+        .with_stderr_contains("[ERROR] license-file `foo` does not appear to exist ([..]).")
         .run();
 }
 

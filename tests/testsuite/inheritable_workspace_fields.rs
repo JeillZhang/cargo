@@ -1,4 +1,6 @@
 //! Tests for inheriting Cargo.toml fields with field.workspace = true
+#![allow(deprecated)]
+
 use cargo_test_support::registry::{Dependency, Package, RegistryBuilder};
 use cargo_test_support::{
     basic_lib_manifest, basic_manifest, git, path2url, paths, project, publish, registry,
@@ -162,10 +164,10 @@ fn inherit_own_workspace_fields() {
 [UPDATING] [..]
 [WARNING] [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v1.2.3 [..]
 [COMPILING] foo v1.2.3 [..]
 [FINISHED] [..]
-[PACKAGED] [..]
 [UPLOADING] foo v1.2.3 [..]
 [UPLOADED] foo v1.2.3 to registry `crates-io`
 [NOTE] waiting for `foo v1.2.3` to be available at registry `crates-io`.
@@ -317,11 +319,11 @@ fn inherit_own_dependencies() {
 [..]
 [PACKAGING] bar v0.2.0 [..]
 [UPDATING] [..]
+[PACKAGED] [..]
 [VERIFYING] bar v0.2.0 [..]
 [COMPILING] dep v0.1.2
 [COMPILING] bar v0.2.0 [..]
 [FINISHED] [..]
-[PACKAGED] [..]
 [UPLOADING] bar v0.2.0 [..]
 [UPLOADED] bar v0.2.0 to registry `crates-io`
 [NOTE] waiting for `bar v0.2.0` to be available at registry `crates-io`.
@@ -476,11 +478,11 @@ fn inherit_own_detailed_dependencies() {
 [..]
 [PACKAGING] bar v0.2.0 [..]
 [UPDATING] [..]
+[PACKAGED] [..]
 [VERIFYING] bar v0.2.0 [..]
 [COMPILING] dep v0.1.2
 [COMPILING] bar v0.2.0 [..]
 [FINISHED] [..]
-[PACKAGED] [..]
 [UPLOADING] bar v0.2.0 [..]
 [UPLOADED] bar v0.2.0 to registry `crates-io`
 [NOTE] waiting for `bar v0.2.0` to be available at registry `crates-io`.
@@ -724,6 +726,7 @@ fn inherit_workspace_fields() {
 [UPDATING] [..]
 [WARNING] [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] bar v1.2.3 [..]
 [WARNING] [..]
 [..]
@@ -731,7 +734,6 @@ fn inherit_workspace_fields() {
 [..]
 [COMPILING] bar v1.2.3 [..]
 [FINISHED] [..]
-[PACKAGED] [..]
 [UPLOADING] bar v1.2.3 [..]
 [UPLOADED] bar v1.2.3 to registry `crates-io`
 [NOTE] waiting for `bar v1.2.3` to be available at registry `crates-io`.
@@ -890,11 +892,11 @@ fn inherit_dependencies() {
 [..]
 [PACKAGING] bar v0.2.0 [..]
 [UPDATING] [..]
+[PACKAGED] [..]
 [VERIFYING] bar v0.2.0 [..]
 [COMPILING] dep v0.1.2
 [COMPILING] bar v0.2.0 [..]
 [FINISHED] [..]
-[PACKAGED] [..]
 [UPLOADING] bar v0.2.0 [..]
 [UPLOADED] bar v0.2.0 to registry `crates-io`
 [NOTE] waiting for `bar v0.2.0` to be available at registry `crates-io`.

@@ -1,5 +1,7 @@
 //! Tests for publishing using the `--target` flag.
 
+#![allow(deprecated)]
+
 use std::fs::File;
 
 use cargo_test_support::{cross_compile, project, publish, registry};
@@ -44,10 +46,10 @@ fn simple_cross_package() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.0 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.0 ([CWD])
 [COMPILING] foo v0.0.0 ([CWD]/target/package/foo-0.0.0)
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -109,10 +111,10 @@ fn publish_with_target() {
             "\
 [UPDATING] crates.io index
 [PACKAGING] foo v0.0.0 ([CWD])
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.0 ([CWD])
 [COMPILING] foo v0.0.0 ([CWD]/target/package/foo-0.0.0)
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..]
 [UPLOADING] foo v0.0.0 ([CWD])
 [UPLOADED] foo v0.0.0 to registry `crates-io`
 [NOTE] waiting [..]

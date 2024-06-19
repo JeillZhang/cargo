@@ -1,5 +1,7 @@
 //! Tests for `[source]` table (source replacement).
 
+#![allow(deprecated)]
+
 use std::fs;
 
 use cargo_test_support::registry::{Package, RegistryBuilder, TestRegistry};
@@ -213,6 +215,7 @@ fn publish_with_replacement() {
 [WARNING] manifest has no documentation, homepage or repository.
 See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info.
 [PACKAGING] foo v0.0.1 ([..])
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([..])
 [UPDATING] `alternative` index
 [DOWNLOADING] crates ...
@@ -220,7 +223,6 @@ See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for
 [COMPILING] bar v1.0.0
 [COMPILING] foo v0.0.1 ([..]foo-0.0.1)
 [FINISHED] `dev` profile [..]
-[PACKAGED] [..]
 [UPLOADING] foo v0.0.1 ([..])
 [UPLOADED] foo v0.0.1 to registry `crates-io`
 [NOTE] waiting for `foo v0.0.1` to be available at registry `crates-io`.

@@ -1,5 +1,7 @@
 //! Tests for namespaced features.
 
+#![allow(deprecated)]
+
 use super::features2::switch_to_resolver_2;
 use cargo_test_support::registry::{Dependency, Package, RegistryBuilder};
 use cargo_test_support::{project, publish};
@@ -1053,11 +1055,11 @@ fn publish() {
             "\
 [UPDATING] [..]
 [PACKAGING] foo v0.1.0 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.1.0 [..]
 [UPDATING] [..]
 [COMPILING] foo v0.1.0 [..]
 [FINISHED] [..]
-[PACKAGED] [..]
 [UPLOADING] foo v0.1.0 [..]
 [UPLOADED] foo v0.1.0 [..]
 [NOTE] waiting [..]

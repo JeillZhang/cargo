@@ -1,5 +1,7 @@
 //! Tests for the `cargo package` command.
 
+#![allow(deprecated)]
+
 use cargo_test_support::paths::CargoPathExt;
 use cargo_test_support::publish::validate_crate_contents;
 use cargo_test_support::registry::{self, Package};
@@ -38,10 +40,10 @@ fn simple() {
 [WARNING] manifest has no documentation[..]
 See [..]
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -62,10 +64,10 @@ src/main.rs
 [WARNING] manifest has no documentation[..]
 See [..]
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -89,10 +91,10 @@ warning: manifest has no description, license, license-file, documentation, \
 homepage or repository.
 See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info.
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -117,10 +119,10 @@ See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for
 warning: manifest has no description, documentation, homepage or repository.
 See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info.
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -145,10 +147,10 @@ See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -258,10 +260,10 @@ fn package_verification() {
 [WARNING] manifest has no description[..]
 See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info.
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -738,10 +740,10 @@ fn ignore_nested() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -760,10 +762,10 @@ src/main.rs
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -816,10 +818,10 @@ fn repackage_on_source_change() {
 [WARNING] [..]
 See [..]
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 5 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 5 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -1943,8 +1945,7 @@ fn exclude_dot_files_and_directories_by_default() {
 
 #[cargo_test]
 fn empty_readme_path() {
-    // Warn but don't fail if `readme` is empty.
-    // Issue #11522.
+    // fail if `readme` is empty.
     let p = project()
         .file(
             "Cargo.toml",
@@ -1963,13 +1964,11 @@ fn empty_readme_path() {
         .build();
 
     p.cargo("package --no-verify")
+        .with_status(101)
         .with_stderr(
             "\
-[WARNING] readme `` does not appear to exist (relative to `[..]/foo`).
-Please update the readme setting in the manifest at `[..]/foo/Cargo.toml`
-This may become a hard error in the future.
-[PACKAGING] foo v1.0.0 ([..]/foo)
-[PACKAGED] [..] files, [..] ([..] compressed)
+[ERROR] readme `` does not appear to exist (relative to `[..]/foo`).
+Please update the readme setting in the manifest at `[..]/foo/Cargo.toml`.
 ",
         )
         .run();
@@ -1977,8 +1976,7 @@ This may become a hard error in the future.
 
 #[cargo_test]
 fn invalid_readme_path() {
-    // Warn but don't fail if `readme` path is invalid.
-    // Issue #11522.
+    // fail if `readme` path is invalid.
     let p = project()
         .file(
             "Cargo.toml",
@@ -1997,13 +1995,11 @@ fn invalid_readme_path() {
         .build();
 
     p.cargo("package --no-verify")
+        .with_status(101)
         .with_stderr(
             "\
-[WARNING] readme `DOES-NOT-EXIST` does not appear to exist (relative to `[..]/foo`).
-Please update the readme setting in the manifest at `[..]/foo/Cargo.toml`
-This may become a hard error in the future.
-[PACKAGING] foo v1.0.0 ([..]/foo)
-[PACKAGED] [..] files, [..] ([..] compressed)
+[ERROR] readme `DOES-NOT-EXIST` does not appear to exist (relative to `[..]/foo`).
+Please update the readme setting in the manifest at `[..]/foo/Cargo.toml`.
 ",
         )
         .run();
@@ -2011,8 +2007,7 @@ This may become a hard error in the future.
 
 #[cargo_test]
 fn readme_or_license_file_is_dir() {
-    // Test warning when `readme` or `license-file` is a directory, not a file.
-    // Issue #11522.
+    // Test error when `readme` or `license-file` is a directory, not a file.
     let p = project()
         .file(
             "Cargo.toml",
@@ -2031,16 +2026,13 @@ fn readme_or_license_file_is_dir() {
         .build();
 
     p.cargo("package --no-verify")
+        .with_status(101)
         .with_stderr(
             "\
-[WARNING] license-file `./src` does not appear to exist (relative to `[..]/foo`).
-Please update the license-file setting in the manifest at `[..]/foo/Cargo.toml`
-This may become a hard error in the future.
-[WARNING] readme `./src` does not appear to exist (relative to `[..]/foo`).
-Please update the readme setting in the manifest at `[..]/foo/Cargo.toml`
-This may become a hard error in the future.
-[PACKAGING] foo v1.0.0 ([..]/foo)
-[PACKAGED] [..] files, [..] ([..] compressed)
+[ERROR] license-file `./src` does not appear to exist (relative to `[..]/foo`).
+Please update the license-file setting in the manifest at `[..]/foo/Cargo.toml`.
+readme `./src` does not appear to exist (relative to `[..]/foo`).
+Please update the readme setting in the manifest at `[..]/foo/Cargo.toml`.
 ",
         )
         .run();
@@ -2048,8 +2040,7 @@ This may become a hard error in the future.
 
 #[cargo_test]
 fn empty_license_file_path() {
-    // Warn but don't fail if license-file is empty.
-    // Issue #11522.
+    // fail if license-file is empty.
     let p = project()
         .file(
             "Cargo.toml",
@@ -2067,15 +2058,13 @@ fn empty_license_file_path() {
         .build();
 
     p.cargo("package --no-verify")
+        .with_status(101)
         .with_stderr(
             "\
 [WARNING] manifest has no license or license-file.
 See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info.
-[WARNING] license-file `` does not appear to exist (relative to `[..]/foo`).
-Please update the license-file setting in the manifest at `[..]/foo/Cargo.toml`
-This may become a hard error in the future.
-[PACKAGING] foo v1.0.0 ([..]/foo)
-[PACKAGED] [..] files, [..] ([..] compressed)
+[ERROR] license-file `` does not appear to exist (relative to `[..]/foo`).
+Please update the license-file setting in the manifest at `[..]/foo/Cargo.toml`.
 ",
         )
         .run();
@@ -2101,13 +2090,11 @@ fn invalid_license_file_path() {
         .build();
 
     p.cargo("package --no-verify")
+        .with_status(101)
         .with_stderr(
             "\
-[WARNING] license-file `does-not-exist` does not appear to exist (relative to `[..]/foo`).
-Please update the license-file setting in the manifest at `[..]/foo/Cargo.toml`
-This may become a hard error in the future.
-[PACKAGING] foo v1.0.0 ([..]/foo)
-[PACKAGED] [..] files, [..] ([..] compressed)
+[ERROR] license-file `does-not-exist` does not appear to exist (relative to `[..]/foo`).
+Please update the license-file setting in the manifest at `[..]/foo/Cargo.toml`.
 ",
         )
         .run();
@@ -2211,10 +2198,10 @@ src/lib.rs
         .with_stderr(
             "\
 [PACKAGING] foo v1.0.0 [..]
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v1.0.0 [..]
 [COMPILING] foo v1.0.0 [..]
 [FINISHED] [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -2271,10 +2258,10 @@ src/lib.rs
             "\
 [WARNING] license-file `../LICENSE` appears to be [..]
 [PACKAGING] foo v1.0.0 [..]
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v1.0.0 [..]
 [COMPILING] foo v1.0.0 [..]
 [FINISHED] [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -2319,9 +2306,9 @@ fn package_restricted_windows() {
 [WARNING] file src/aux/mod.rs is a reserved Windows filename, it will not work on Windows platforms
 [WARNING] file src/con.rs is a reserved Windows filename, it will not work on Windows platforms
 [PACKAGING] foo [..]
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] foo [..]
 [COMPILING] foo [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 [FINISHED] [..]
 ",
         )
@@ -2748,17 +2735,17 @@ fn in_workspace() {
 [WARNING] manifest has no documentation, [..]
 See [..]
 [PACKAGING] bar v0.0.1 ([CWD]/bar)
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] bar v0.0.1 ([CWD]/bar)
 [COMPILING] bar v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 [WARNING] manifest has no documentation, [..]
 See [..]
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -2801,10 +2788,10 @@ fn workspace_noconflict_readme() {
         .with_stderr(
             "\
 [PACKAGING] bar v0.0.1 ([CWD]/bar)
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] bar v0.0.1 ([CWD]/bar)
 [COMPILING] bar v0.0.1 ([CWD]/[..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -2845,10 +2832,10 @@ fn workspace_conflict_readme() {
             "\
 warning: readme `../README.md` appears to be a path outside of the package, but there is already a file named `README.md` in the root of the package. The archived crate will contain the copy in the root of the package. Update the readme to point to the path relative to the root of the package to remove this warning.
 [PACKAGING] bar v0.0.1 ([CWD]/bar)
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] bar v0.0.1 ([CWD]/bar)
 [COMPILING] bar v0.0.1 ([CWD]/[..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -3047,10 +3034,10 @@ src/main.rs
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 [..]
+[PACKAGED] 4 files[..]
 [VERIFYING] foo v0.0.1 [..]
 [COMPILING] foo v0.0.1 [..]
 [FINISHED] [..]
-[PACKAGED] 4 files[..]
 ",
         )
         .run();
@@ -3153,10 +3140,10 @@ src/main.rs
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 [..]
+[PACKAGED] 5 files, [..]
 [VERIFYING] foo v0.0.1 [..]
 [COMPILING] foo v0.0.1 [..]
 [FINISHED] [..]
-[PACKAGED] 5 files, [..]
 ",
         )
         .run();
@@ -3275,10 +3262,10 @@ src/main.rs.bak
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 [..]
+[PACKAGED] 7 files, [..]
 [VERIFYING] foo v0.0.1 [..]
 [COMPILING] foo v0.0.1 [..]
 [FINISHED] [..]
-[PACKAGED] 7 files, [..]
 ",
         )
         .run();
@@ -3353,10 +3340,10 @@ See [..]
 [WARNING] ignoring example `ExampleFoo` as `examples/ExampleFoo.rs` is not included in the published package
 [WARNING] ignoring test `ExplicitPath` as `tests/ExplicitPath.rs` is not included in the published package
 [WARNING] ignoring test `explicitpath` as `tests/explicitpath.rs` is not included in the published package
+[PACKAGED] 8 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 8 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -3386,10 +3373,10 @@ See [..]
 [WARNING] ignoring example `ExampleFoo` as `examples/ExampleFoo.rs` is not included in the published package
 [WARNING] ignoring test `ExplicitPath` as `tests/ExplicitPath.rs` is not included in the published package
 [WARNING] ignoring test `explicitpath` as `tests/explicitpath.rs` is not included in the published package
+[PACKAGED] 8 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 8 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -3463,10 +3450,10 @@ fn mixed_case() {
 [WARNING] manifest has no documentation[..]
 See [..]
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -3487,10 +3474,10 @@ src/main.rs
 [WARNING] manifest has no documentation[..]
 See [..]
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -3524,11 +3511,11 @@ fn versionless_package() {
             "\
 warning: manifest has no license, license-file, documentation, homepage or repository.
 See https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info.
-   Packaging foo v0.0.0 ([CWD])
-   Verifying foo v0.0.0 ([CWD])
-   Compiling foo v0.0.0 ([CWD]/target/package/foo-0.0.0)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in [..]s
-    Packaged 4 files, [..]B ([..]B compressed)
+[PACKAGING] foo v0.0.0 ([CWD])
+[PACKAGED] 4 files, [..]B ([..]B compressed)
+[VERIFYING] foo v0.0.0 ([CWD])
+[COMPILING] foo v0.0.0 ([CWD]/target/package/foo-0.0.0)
+[FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]s
 ",
         )
         .run();
@@ -3790,10 +3777,10 @@ fn normalize_paths() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 11 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 11 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -3893,10 +3880,10 @@ fn discovery_inferred_build_rs_included() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -3973,10 +3960,10 @@ fn discovery_inferred_build_rs_excluded() {
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
 [WARNING] ignoring `package.build` as `build.rs` is not included in the published package
+[PACKAGED] 3 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 3 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4050,10 +4037,10 @@ fn discovery_explicit_build_rs_included() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4131,10 +4118,10 @@ fn discovery_explicit_build_rs_excluded() {
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
 [WARNING] ignoring `package.build` as `build.rs` is not included in the published package
+[PACKAGED] 3 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 3 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4207,10 +4194,10 @@ fn discovery_inferred_lib_included() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 5 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 5 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4297,10 +4284,10 @@ fn discovery_inferred_lib_excluded() {
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
 [WARNING] ignoring library `foo` as `src/lib.rs` is not included in the published package
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4376,10 +4363,10 @@ fn discovery_explicit_lib_included() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 5 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 5 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4469,10 +4456,10 @@ fn discovery_explicit_lib_excluded() {
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
 [WARNING] ignoring library `foo` as `src/lib.rs` is not included in the published package
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4548,10 +4535,10 @@ fn discovery_inferred_other_included() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 8 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 8 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4662,10 +4649,10 @@ fn discovery_inferred_other_excluded() {
 [WARNING] ignoring example `example_foo` as `examples/example_foo.rs` is not included in the published package
 [WARNING] ignoring test `test_foo` as `tests/test_foo.rs` is not included in the published package
 [WARNING] ignoring benchmark `bench_foo` as `benches/bench_foo.rs` is not included in the published package
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4753,10 +4740,10 @@ fn discovery_explicit_other_included() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 8 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 8 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4879,10 +4866,10 @@ fn discovery_explicit_other_excluded() {
 [WARNING] ignoring example `example_foo` as `examples/example_foo.rs` is not included in the published package
 [WARNING] ignoring test `test_foo` as `tests/test_foo.rs` is not included in the published package
 [WARNING] ignoring benchmark `bench_foo` as `benches/bench_foo.rs` is not included in the published package
+[PACKAGED] 4 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 4 files, [..] ([..] compressed)
 ",
         )
         .run();
@@ -4968,10 +4955,10 @@ fn deterministic_build_targets() {
         .with_stderr(
             "\
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] 10 files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 ([CWD][..])
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] 10 files, [..] ([..] compressed)
 ",
         )
         .run();

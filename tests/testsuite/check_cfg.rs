@@ -1,5 +1,7 @@
 //! Tests for Cargo usage of rustc `--check-cfg`.
 
+#![allow(deprecated)]
+
 use cargo_test_support::{basic_manifest, project};
 
 macro_rules! x {
@@ -29,7 +31,7 @@ macro_rules! x {
     }};
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features() {
     let p = project()
         .file(
@@ -55,7 +57,7 @@ fn features() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features_with_deps() {
     let p = project()
         .file(
@@ -85,7 +87,7 @@ fn features_with_deps() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features_with_opt_deps() {
     let p = project()
         .file(
@@ -116,7 +118,7 @@ fn features_with_opt_deps() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features_with_namespaced_features() {
     let p = project()
         .file(
@@ -146,7 +148,7 @@ fn features_with_namespaced_features() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features_fingerprint() {
     let p = project()
         .file(
@@ -216,7 +218,7 @@ fn features_fingerprint() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn well_known_names_values() {
     let p = project()
         .file("Cargo.toml", &basic_manifest("foo", "0.1.0"))
@@ -229,7 +231,7 @@ fn well_known_names_values() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features_test() {
     let p = project()
         .file(
@@ -254,7 +256,7 @@ fn features_test() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features_doctest() {
     let p = project()
         .file(
@@ -283,7 +285,7 @@ fn features_doctest() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn well_known_names_values_test() {
     let p = project()
         .file("Cargo.toml", &basic_manifest("foo", "0.1.0"))
@@ -296,7 +298,7 @@ fn well_known_names_values_test() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn well_known_names_values_doctest() {
     let p = project()
         .file("Cargo.toml", &basic_manifest("foo", "0.1.0"))
@@ -311,7 +313,7 @@ fn well_known_names_values_doctest() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn features_doc() {
     let p = project()
         .file(
@@ -338,7 +340,7 @@ fn features_doc() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn build_script_feedback() {
     let p = project()
         .file(
@@ -366,7 +368,7 @@ fn build_script_feedback() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn build_script_doc() {
     let p = project()
         .file(
@@ -404,7 +406,7 @@ fn build_script_doc() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn build_script_override() {
     let target = cargo_test_support::rustc_host();
 
@@ -442,7 +444,7 @@ fn build_script_override() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn build_script_test() {
     let p = project()
         .file(
@@ -497,7 +499,7 @@ fn build_script_test() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_simple() {
     let p = project()
         .file(
@@ -522,7 +524,7 @@ fn config_simple() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_workspace() {
     let p = project()
         .file(
@@ -556,7 +558,7 @@ fn config_workspace() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_workspace_not_inherited() {
     let p = project()
         .file(
@@ -587,7 +589,7 @@ fn config_workspace_not_inherited() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_invalid_position() {
     let p = project()
         .file(
@@ -611,7 +613,7 @@ fn config_invalid_position() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_invalid_empty() {
     let p = project()
         .file(
@@ -630,11 +632,12 @@ fn config_invalid_empty() {
         .build();
 
     p.cargo("check")
+        .with_status(101)
         .with_stderr_contains("[..]missing field `level`[..]")
-        .run_expect_error();
+        .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_invalid_not_list() {
     let p = project()
         .file(
@@ -660,7 +663,7 @@ fn config_invalid_not_list() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_invalid_not_list_string() {
     let p = project()
         .file(
@@ -686,7 +689,7 @@ fn config_invalid_not_list_string() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_and_features() {
     let p = project()
         .file(
@@ -715,7 +718,7 @@ fn config_and_features() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_with_cargo_doc() {
     let p = project()
         .file(
@@ -738,7 +741,7 @@ fn config_with_cargo_doc() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_with_cargo_test() {
     let p = project()
         .file(
@@ -761,7 +764,7 @@ fn config_with_cargo_test() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_and_build_script() {
     let p = project()
         .file(
@@ -790,7 +793,7 @@ fn config_and_build_script() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_features_and_build_script() {
     let p = project()
         .file(
@@ -825,7 +828,7 @@ fn config_features_and_build_script() {
         .run();
 }
 
-#[cargo_test(>=1.79, reason = "--check-cfg was stabilized in Rust 1.79")]
+#[cargo_test]
 fn config_fingerprint() {
     let p = project()
         .file(

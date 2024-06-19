@@ -16,7 +16,6 @@ use std::fs;
 use std::task;
 
 use cargo::core::dependency::Dependency;
-use cargo::core::registry::PackageRegistry;
 use cargo::core::Package;
 use cargo::core::Registry;
 use cargo::core::SourceId;
@@ -137,7 +136,7 @@ fn bump_check(args: &clap::ArgMatches, gctx: &cargo::util::GlobalContext) -> Car
 
     let mut needs_bump = Vec::new();
 
-    check_crates_io(gctx, &changed_members, &mut needs_bump)?;
+    check_crates_io(&ws, &changed_members, &mut needs_bump)?;
 
     if let Some(referenced_commit) = referenced_commit.as_ref() {
         status(&format!("compare against `{}`", referenced_commit.id()))?;
@@ -177,8 +176,6 @@ fn bump_check(args: &clap::ArgMatches, gctx: &cargo::util::GlobalContext) -> Car
     let mut cmd = ProcessBuilder::new("cargo");
     cmd.arg("semver-checks")
         .arg("check-release")
-        .args(&["--exclude", "cargo-test-macro"]) // FIXME: Remove once 1.79 is stable.
-        .args(&["--exclude", "cargo-test-support"]) // FIXME: Remove once 1.79 is stable.
         .arg("--workspace");
     gctx.shell().status("Running", &cmd)?;
     cmd.exec()?;
@@ -187,8 +184,6 @@ fn bump_check(args: &clap::ArgMatches, gctx: &cargo::util::GlobalContext) -> Car
         let mut cmd = ProcessBuilder::new("cargo");
         cmd.arg("semver-checks")
             .arg("--workspace")
-            .args(&["--exclude", "cargo-test-macro"]) // FIXME: Remove once 1.79 is stable.
-            .args(&["--exclude", "cargo-test-support"]) // FIXME: Remove once 1.79 is stable.
             .arg("--baseline-rev")
             .arg(referenced_commit.id().to_string());
         for krate in crates_not_check_against_channels {
@@ -385,12 +380,13 @@ fn symmetric_diff<'a>(
 ///
 /// Assumption: We always release a version larger than all existing versions.
 fn check_crates_io<'a>(
-    gctx: &GlobalContext,
+    ws: &Workspace<'a>,
     changed_members: &HashMap<&'a str, &'a Package>,
     needs_bump: &mut Vec<&'a Package>,
 ) -> CargoResult<()> {
+    let gctx = ws.gctx();
     let source_id = SourceId::crates_io(gctx)?;
-    let mut registry = PackageRegistry::new(gctx)?;
+    let mut registry = ws.package_registry()?;
     let _lock = gctx.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
     registry.lock_patches();
     gctx.shell().status(

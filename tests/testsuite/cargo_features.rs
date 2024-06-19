@@ -1,5 +1,7 @@
 //! Tests for `cargo-features` definitions.
 
+#![allow(deprecated)]
+
 use cargo_test_support::registry::Package;
 use cargo_test_support::{project, registry};
 
@@ -662,10 +664,10 @@ fn publish_allowed() {
 [WARNING] [..]
 [..]
 [PACKAGING] a v0.0.1 [..]
+[PACKAGED] [..]
 [VERIFYING] a v0.0.1 [..]
 [COMPILING] a v0.0.1 [..]
 [FINISHED] [..]
-[PACKAGED] [..]
 [UPLOADING] a v0.0.1 [..]
 [UPLOADED] a v0.0.1 to registry `crates-io`
 [NOTE] waiting for `a v0.0.1` to be available at registry `crates-io`.

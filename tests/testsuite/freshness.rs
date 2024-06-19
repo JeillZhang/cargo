@@ -1,5 +1,7 @@
 //! Tests for fingerprinting (rebuild detection).
 
+#![allow(deprecated)]
+
 use filetime::FileTime;
 use std::fs::{self, OpenOptions};
 use std::io;
@@ -2931,11 +2933,12 @@ fn use_mtime_cache_in_cargo_home() {
     p.change_file("src/lib.rs", "illegal syntax");
     p.cargo("check -v")
         .env("CARGO_HOME", &cargo_home)
-        .with_stderr(
+        .with_status(101)
+        .with_stderr_contains(
             "\
 [DIRTY] foo v0.5.0 ([CWD]): [..]
 [CHECKING] foo v0.5.0 ([CWD])
 [RUNNING] `rustc --crate-name foo --edition=2015 src/lib.rs [..]",
         )
-        .run_expect_error();
+        .run();
 }

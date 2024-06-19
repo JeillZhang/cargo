@@ -1,9 +1,11 @@
 //! Tests for the `cargo publish` command.
 
+#![allow(deprecated)]
+
 use cargo_test_support::git::{self, repo};
 use cargo_test_support::paths;
 use cargo_test_support::registry::{self, Package, RegistryBuilder, Response};
-use cargo_test_support::{basic_manifest, no_such_file_err_msg, project, publish};
+use cargo_test_support::{basic_manifest, project, publish};
 use std::fs;
 use std::sync::{Arc, Mutex};
 
@@ -509,8 +511,8 @@ fn publish_clean() {
             "\
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -559,8 +561,8 @@ fn publish_in_sub_repo() {
             "\
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -609,8 +611,8 @@ fn publish_when_ignored() {
             "\
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -658,8 +660,8 @@ fn ignore_when_crate_ignored() {
             "\
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -738,10 +740,10 @@ fn dry_run() {
 [WARNING] manifest has no documentation, [..]
 See [..]
 [PACKAGING] foo v0.0.1 ([CWD])
+[PACKAGED] [..] files, [..] ([..] compressed)
 [VERIFYING] foo v0.0.1 ([CWD])
 [COMPILING] foo v0.0.1 [..]
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
 [UPLOADING] foo v0.0.1 ([CWD])
 [WARNING] aborting upload due to dry run
 ",
@@ -852,8 +854,8 @@ fn publish_allowed_registry() {
             "\
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -914,8 +916,8 @@ fn publish_implicitly_to_only_allowed_registry() {
 [NOTE] found `alternative` as only allowed registry. Publishing to it automatically.
 [UPDATING] `alternative` index
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -1089,8 +1091,8 @@ The registry `alternative` is not listed in the `package.publish` value in Cargo
 [WARNING] [..]
 [..]
 [PACKAGING] [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -1141,8 +1143,8 @@ fn publish_with_select_features() {
 [..]
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -1193,8 +1195,8 @@ fn publish_with_all_features() {
 [..]
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])
@@ -1299,8 +1301,8 @@ fn publish_with_patch() {
 [..]
 [..]
 [UPDATING] crates.io index
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [..]
@@ -1390,8 +1392,8 @@ fn publish_checks_for_token_before_verify() {
 [..]
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 [..]
@@ -2137,54 +2139,6 @@ include `--registry dummy-registry` or `--registry crates-io`
         .run();
 }
 
-#[cargo_test]
-fn publish_with_missing_readme() {
-    // Use local registry for faster test times since no publish will occur
-    let registry = registry::init();
-
-    let p = project()
-        .file(
-            "Cargo.toml",
-            r#"
-                [package]
-                name = "foo"
-                version = "0.1.0"
-                edition = "2015"
-                authors = []
-                license = "MIT"
-                description = "foo"
-                homepage = "https://example.com/"
-                readme = "foo.md"
-            "#,
-        )
-        .file("src/lib.rs", "")
-        .build();
-
-    p.cargo("publish --no-verify")
-        .replace_crates_io(registry.index_url())
-        .with_status(101)
-        .with_stderr(&format!(
-            "\
-[UPDATING] [..]
-[WARNING] readme `foo.md` does not appear to exist (relative to `[..]/foo`).
-Please update the readme setting in the manifest at `[..]/foo/Cargo.toml`
-This may become a hard error in the future.
-[PACKAGING] foo v0.1.0 [..]
-[PACKAGED] [..] files, [..] ([..] compressed)
-[UPLOADING] foo v0.1.0 [..]
-[ERROR] failed to read `readme` file for package `foo v0.1.0 ([ROOT]/foo)`
-
-Caused by:
-  failed to read `[ROOT]/foo/foo.md`
-
-Caused by:
-  {}
-",
-            no_such_file_err_msg()
-        ))
-        .run();
-}
-
 // Registry returns an API error.
 #[cargo_test]
 fn api_error_json() {
@@ -2877,8 +2831,8 @@ fn http_api_not_noop() {
 [..]
 [..]
 [..]
+[PACKAGED] [..]
 [VERIFYING] foo v0.0.1 ([CWD])
-[..]
 [..]
 [..]
 [UPLOADING] foo v0.0.1 ([CWD])

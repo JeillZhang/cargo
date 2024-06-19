@@ -1,5 +1,7 @@
 //! Tests for the `cargo run` command.
 
+#![allow(deprecated)]
+
 use cargo_test_support::{
     basic_bin_manifest, basic_lib_manifest, basic_manifest, project, Project,
 };
@@ -740,9 +742,7 @@ fn one_bin_multiple_examples() {
         .run();
 }
 
-// Temporarily disabled on Windows due to https://github.com/rust-lang/rust/issues/122857
 #[cargo_test]
-#[cfg(not(windows))]
 fn example_with_release_flag() {
     let p = project()
         .file(
