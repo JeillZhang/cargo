@@ -8,7 +8,7 @@ on:
 
 env:
   # Required, URL to upstream (fork base)
-  UPSTREAM_URL: "https://github.com/torvalds/linux.git"
+  UPSTREAM_URL: "https://github.com/rust-lang/cargo.git"
   # Required, token to authenticate bot, could use ${{ secrets.GITHUB_TOKEN }} 
   # Over here, we use a PAT instead to authenticate workflow file changes.
   WORKFLOW_TOKEN: ${{ secrets.AUTOSYNCFORKTOKEN }}
