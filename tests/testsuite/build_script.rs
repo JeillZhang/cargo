@@ -7,7 +7,6 @@ use std::thread;
 
 use cargo_test_support::compare::assert_e2e;
 use cargo_test_support::install::cargo_home;
-use cargo_test_support::paths::CargoPathExt;
 use cargo_test_support::prelude::*;
 use cargo_test_support::registry::Package;
 use cargo_test_support::str;
@@ -5773,6 +5772,44 @@ fn build_script_rerun_when_target_rustflags_change() {
 "#]])
         .with_stdout_data(str![[r#"
 hello
+
+"#]])
+        .run();
+}
+
+#[cargo_test]
+fn links_overrides_with_target_applies_to_host() {
+    let p = project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [package]
+                name = "mylib-sys"
+                edition = "2021"
+                version = "0.0.1"
+                authors = []
+                links = "mylib"
+            "#,
+        )
+        .file("src/lib.rs", "")
+        .file("build.rs", "bad file")
+        .build();
+
+    p.cargo("build -v")
+        .masquerade_as_nightly_cargo(&["target-applies-to-host"])
+        .args(&[
+            "-Ztarget-applies-to-host",
+            "--config",
+            "target-applies-to-host=false",
+        ])
+        .args(&[
+            "--config",
+            &format!(r#"target.{}.mylib.rustc-link-search=["foo"]"#, rustc_host()),
+        ])
+        .with_stderr_data(str![[r#"
+[COMPILING] mylib-sys v0.0.1 ([ROOT]/foo)
+[RUNNING] `rustc --crate-name mylib_sys [..] -L foo`
+[FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [ELAPSED]s
 
 "#]])
         .run();
