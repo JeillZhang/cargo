@@ -1,15 +1,12 @@
 [package]
 name = "cargo-test-support"
-version = "0.3.0"
+version = "0.4.0"
 edition.workspace = true
 rust-version = "1.79"  # MSRV:1
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 description = "Testing framework for Cargo's testsuite."
-
-[lib]
-doctest = false
 
 [dependencies]
 anstream.workspace = true
