@@ -157,6 +157,8 @@ fn lint_dep_incompatible_with_rust_version() {
         .with_stderr_data(str![[r#"
 [UPDATING] `dummy-registry` index
 [LOCKING] 3 packages to latest compatible versions
+[ADDING] too_new_child v0.0.1 (requires Rust 1.2345.0)
+[ADDING] too_new_parent v0.0.1 (requires Rust 1.2345.0)
 
 "#]])
         .run();
@@ -296,6 +298,8 @@ fn resolve_with_rustc() {
         .with_stderr_data(str![[r#"
 [UPDATING] `dummy-registry` index
 [LOCKING] 2 packages to latest compatible versions
+[ADDING] newer-and-older v1.6.0 (requires Rust 1.2345)
+[ADDING] only-newer v1.6.0 (requires Rust 1.2345)
 
 "#]])
         .run();
@@ -1072,6 +1076,118 @@ fn cargo_install_ignores_msrv_config() {
 [INSTALLING] [ROOT]/home/.cargo/bin/foo[EXE]
 [INSTALLED] package `foo v0.0.1` (executable `foo[EXE]`)
 [WARNING] be sure to add `[ROOT]/home/.cargo/bin` to your PATH to be able to run the installed binaries
+
+"#]])
+        .run();
+}
+
+#[cargo_test]
+fn report_rust_versions() {
+    Package::new("dep-only-low-compatible", "1.55.0")
+        .rust_version("1.55.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-only-low-incompatible", "1.75.0")
+        .rust_version("1.75.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-only-high-compatible", "1.65.0")
+        .rust_version("1.65.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-only-high-incompatible", "1.75.0")
+        .rust_version("1.75.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-only-unset-unset", "1.0.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-only-unset-compatible", "1.75.0")
+        .rust_version("1.75.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-only-unset-incompatible", "1.2345.0")
+        .rust_version("1.2345.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-shared-compatible", "1.55.0")
+        .rust_version("1.55.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+    Package::new("dep-shared-incompatible", "1.75.0")
+        .rust_version("1.75.0")
+        .file("src/lib.rs", "fn other_stuff() {}")
+        .publish();
+
+    let p = project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [workspace]
+                members = ["high", "low", "unset"]
+            "#,
+        )
+        .file(
+            "high/Cargo.toml",
+            r#"
+                [package]
+                name = "high"
+                edition = "2015"
+                rust-version = "1.70.0"
+
+                [dependencies]
+                dep-only-high-compatible = "1"
+                dep-only-high-incompatible = "1"
+                dep-shared-compatible = "1"
+                dep-shared-incompatible = "1"
+            "#,
+        )
+        .file("high/src/main.rs", "fn main(){}")
+        .file(
+            "low/Cargo.toml",
+            r#"
+                [package]
+                name = "low"
+                edition = "2015"
+                rust-version = "1.60.0"
+
+                [dependencies]
+                dep-only-low-compatible = "1"
+                dep-only-low-incompatible = "1"
+                dep-shared-compatible = "1"
+                dep-shared-incompatible = "1"
+            "#,
+        )
+        .file("low/src/main.rs", "fn main(){}")
+        .file(
+            "unset/Cargo.toml",
+            r#"
+                [package]
+                name = "unset"
+                edition = "2015"
+
+                [dependencies]
+                dep-only-unset-unset = "1"
+                dep-only-unset-compatible = "1"
+                dep-only-unset-incompatible = "1"
+                dep-shared-compatible = "1"
+                dep-shared-incompatible = "1"
+            "#,
+        )
+        .file("unset/src/main.rs", "fn main(){}")
+        .build();
+
+    p.cargo("update")
+        .env("CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS", "fallback")
+        .arg("-Zmsrv-policy")
+        .masquerade_as_nightly_cargo(&["msrv-policy"])
+        .with_stderr_data(str![[r#"
+[UPDATING] `dummy-registry` index
+[LOCKING] 9 packages to latest Rust 1.60.0 compatible versions
+[ADDING] dep-only-high-incompatible v1.75.0 (requires Rust 1.75.0)
+[ADDING] dep-only-low-incompatible v1.75.0 (requires Rust 1.75.0)
+[ADDING] dep-only-unset-incompatible v1.2345.0 (requires Rust 1.2345.0)
+[ADDING] dep-shared-incompatible v1.75.0 (requires Rust 1.75.0)
 
 "#]])
         .run();
