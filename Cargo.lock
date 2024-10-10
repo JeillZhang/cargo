@@ -342,6 +342,7 @@ dependencies = [
  "rand",
  "regex",
  "rusqlite",
+ "rustc-hash 2.0.0",
  "rustfix",
  "same-file",
  "semver",
@@ -2812,9 +2813,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.11.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8746739f11d39ce5ad5c2520a9b75285310dbfe78c541ccf832d38615765aec0"
+checksum = "666f0f59e259aea2d72e6012290c09877a780935cc3c18b1ceded41f3890d59c"
 dependencies = [
  "bitflags 2.6.0",
  "memchr",
@@ -3005,6 +3006,12 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
+
+[[package]]
+name = "rustc-hash"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
 
 [[package]]
 name = "rustfix"
@@ -3748,7 +3755,7 @@ dependencies = [
  "log",
  "ordered-float",
  "partial_ref",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "serde",
  "thiserror",
  "varisat-checker",
@@ -3768,7 +3775,7 @@ dependencies = [
  "anyhow",
  "log",
  "partial_ref",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "smallvec",
  "thiserror",
  "varisat-dimacs",
