@@ -36,8 +36,8 @@ cargo-test-support = { version = "0.6.0", path = "crates/cargo-test-support" }
 cargo-util = { version = "0.2.14", path = "crates/cargo-util" }
 cargo-util-schemas = { version = "0.7.0", path = "crates/cargo-util-schemas" }
 cargo_metadata = "0.18.1"
-clap = "4.5.18"
-clap_complete = { version = "4.5.32", features = ["unstable-dynamic"] }
+clap = "4.5.20"
+clap_complete = { version = "4.5.35", features = ["unstable-dynamic"] }
 color-print = "0.3.6"
 core-foundation = { version = "0.10.0", features = ["mac_os_10_7_support"] }
 crates-io = { version = "0.40.4", path = "crates/crates-io" }
@@ -83,6 +83,7 @@ rusqlite = { version = "0.32.0", features = ["bundled"] }
 rustc-hash = "2.0.0"
 rustfix = { version = "0.8.2", path = "crates/rustfix" }
 same-file = "1.0.6"
+schemars = "0.8.21"
 security-framework = "2.11.1"
 semver = { version = "1.0.23", features = ["serde"] }
 serde = "1.0.204"
