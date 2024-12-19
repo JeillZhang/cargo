@@ -94,6 +94,7 @@ struct GitVcsInfo {
 }
 
 // Builds a tarball and places it in the output directory.
+#[tracing::instrument(skip_all)]
 fn create_package(
     ws: &Workspace<'_>,
     pkg: &Package,
@@ -372,6 +373,7 @@ fn local_deps<T>(packages: impl Iterator<Item = (Package, T)>) -> LocalDependenc
 }
 
 /// Performs pre-archiving checks and builds a list of files to archive.
+#[tracing::instrument(skip_all)]
 fn prepare_archive(
     ws: &Workspace<'_>,
     pkg: &Package,
@@ -400,6 +402,7 @@ fn prepare_archive(
 }
 
 /// Builds list of files to archive.
+#[tracing::instrument(skip_all)]
 fn build_ar_list(
     ws: &Workspace<'_>,
     pkg: &Package,
@@ -730,57 +733,79 @@ fn check_metadata(pkg: &Package, gctx: &GlobalContext) -> CargoResult<()> {
 /// has not been passed, then `bail!` with an informative message. Otherwise
 /// return the sha1 hash of the current *HEAD* commit, or `None` if no repo is
 /// found.
+#[tracing::instrument(skip_all)]
 fn check_repo_state(
     p: &Package,
     src_files: &[PathBuf],
     gctx: &GlobalContext,
     opts: &PackageOpts<'_>,
 ) -> CargoResult<Option<VcsInfo>> {
-    if let Ok(repo) = git2::Repository::discover(p.root()) {
-        if let Some(workdir) = repo.workdir() {
-            debug!("found a git repo at {:?}", workdir);
-            let path = p.manifest_path();
-            let path =
-                paths::strip_prefix_canonical(path, workdir).unwrap_or_else(|_| path.to_path_buf());
-            if let Ok(status) = repo.status_file(&path) {
-                if (status & git2::Status::IGNORED).is_empty() {
-                    debug!(
-                        "found (git) Cargo.toml at {:?} in workdir {:?}",
-                        path, workdir
-                    );
-                    let path_in_vcs = path
-                        .parent()
-                        .and_then(|p| p.to_str())
-                        .unwrap_or("")
-                        .replace("\\", "/");
-                    let Some(git) = git(p, src_files, &repo, &opts)? else {
-                        // If the git repo lacks essensial field like `sha1`, and since this field exists from the beginning,
-                        // then don't generate the corresponding file in order to maintain consistency with past behavior.
-                        return Ok(None);
-                    };
-                    return Ok(Some(VcsInfo { git, path_in_vcs }));
-                }
-            }
-            gctx.shell().verbose(|shell| {
-                shell.warn(format!(
-                    "no (git) Cargo.toml found at `{}` in workdir `{}`",
-                    path.display(),
-                    workdir.display()
-                ))
-            })?;
-        }
-    } else {
+    let Ok(repo) = git2::Repository::discover(p.root()) else {
         gctx.shell().verbose(|shell| {
             shell.warn(format!("no (git) VCS found for `{}`", p.root().display()))
         })?;
+        // No Git repo found. Have to assume it is clean.
+        return Ok(None);
+    };
+
+    let Some(workdir) = repo.workdir() else {
+        debug!(
+            "no (git) workdir found for repo at `{}`",
+            repo.path().display()
+        );
+        // No git workdir. Have to assume it is clean.
+        return Ok(None);
+    };
+
+    debug!("found a git repo at `{}`", workdir.display());
+    let path = p.manifest_path();
+    let path = paths::strip_prefix_canonical(path, workdir).unwrap_or_else(|_| path.to_path_buf());
+    let Ok(status) = repo.status_file(&path) else {
+        gctx.shell().verbose(|shell| {
+            shell.warn(format!(
+                "no (git) Cargo.toml found at `{}` in workdir `{}`",
+                path.display(),
+                workdir.display()
+            ))
+        })?;
+        // No checked-in `Cargo.toml` found. This package may be irrelevant.
+        // Have to assume it is clean.
+        return Ok(None);
+    };
+
+    if !(status & git2::Status::IGNORED).is_empty() {
+        gctx.shell().verbose(|shell| {
+            shell.warn(format!(
+                "found (git) Cargo.toml ignored at `{}` in workdir `{}`",
+                path.display(),
+                workdir.display()
+            ))
+        })?;
+        // An ignored `Cargo.toml` found. This package may be irrelevant.
+        // Have to assume it is clean.
+        return Ok(None);
     }
 
-    // No VCS with a checked in `Cargo.toml` found, so we don't know if the
-    // directory is dirty or not, thus we have to assume that it's clean.
-    return Ok(None);
+    debug!(
+        "found (git) Cargo.toml at `{}` in workdir `{}`",
+        path.display(),
+        workdir.display(),
+    );
+    let path_in_vcs = path
+        .parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or("")
+        .replace("\\", "/");
+    let Some(git) = git(p, src_files, &repo, &opts)? else {
+        // If the git repo lacks essensial field like `sha1`, and since this field exists from the beginning,
+        // then don't generate the corresponding file in order to maintain consistency with past behavior.
+        return Ok(None);
+    };
+
+    return Ok(Some(VcsInfo { git, path_in_vcs }));
 
     fn git(
-        p: &Package,
+        pkg: &Package,
         src_files: &[PathBuf],
         repo: &git2::Repository,
         opts: &PackageOpts<'_>,
@@ -803,7 +828,7 @@ fn check_repo_state(
             .iter()
             .filter(|src_file| dirty_files.iter().any(|path| src_file.starts_with(path)))
             .map(|path| {
-                path.strip_prefix(p.root())
+                path.strip_prefix(pkg.root())
                     .unwrap_or(path)
                     .display()
                     .to_string()
