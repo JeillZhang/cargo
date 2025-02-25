@@ -217,7 +217,7 @@ fn do_package<'a>(
     };
 
     let mut local_reg = if ws.gctx().cli_unstable().package_workspace {
-        let reg_dir = ws.target_dir().join("package").join("tmp-registry");
+        let reg_dir = ws.build_dir().join("package").join("tmp-registry");
         sid.map(|sid| TmpRegistry::new(ws.gctx(), reg_dir, sid))
             .transpose()?
     } else {
@@ -1032,22 +1032,33 @@ impl<'a> TmpRegistry<'a> {
         let deps: Vec<_> = new_crate
             .deps
             .into_iter()
-            .map(|dep| RegistryDependency {
-                name: dep.name.into(),
-                req: dep.version_req.into(),
-                features: dep.features.into_iter().map(|x| x.into()).collect(),
-                optional: dep.optional,
-                default_features: dep.default_features,
-                target: dep.target.map(|x| x.into()),
-                kind: Some(dep.kind.into()),
-                registry: dep.registry.map(|x| x.into()),
-                package: None,
-                public: None,
-                artifact: dep
-                    .artifact
-                    .map(|xs| xs.into_iter().map(|x| x.into()).collect()),
-                bindep_target: dep.bindep_target.map(|x| x.into()),
-                lib: dep.lib,
+            .map(|dep| {
+                let name = dep
+                    .explicit_name_in_toml
+                    .clone()
+                    .unwrap_or_else(|| dep.name.clone())
+                    .into();
+                let package = dep
+                    .explicit_name_in_toml
+                    .as_ref()
+                    .map(|_| dep.name.clone().into());
+                RegistryDependency {
+                    name: name,
+                    req: dep.version_req.into(),
+                    features: dep.features.into_iter().map(|x| x.into()).collect(),
+                    optional: dep.optional,
+                    default_features: dep.default_features,
+                    target: dep.target.map(|x| x.into()),
+                    kind: Some(dep.kind.into()),
+                    registry: dep.registry.map(|x| x.into()),
+                    package: package,
+                    public: None,
+                    artifact: dep
+                        .artifact
+                        .map(|xs| xs.into_iter().map(|x| x.into()).collect()),
+                    bindep_target: dep.bindep_target.map(|x| x.into()),
+                    lib: dep.lib,
+                }
             })
             .collect();
 
