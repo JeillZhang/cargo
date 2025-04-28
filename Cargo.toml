@@ -11,7 +11,7 @@ exclude = [
 ]
 
 [workspace.package]
-rust-version = "1.83"  # MSRV:3
+rust-version = "1.84"  # MSRV:3
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/rust-lang/cargo"
@@ -216,6 +216,7 @@ tracing = { workspace = true, features = ["attributes"] }
 tracing-subscriber.workspace = true
 unicase.workspace = true
 unicode-width.workspace = true
+unicode-xid.workspace = true
 url.workspace = true
 walkdir.workspace = true
 
