@@ -213,12 +213,13 @@ fn package_exclude() {
 
     p.cargo("vendor --respect-source-config").run();
     let csum = p.read_file("vendor/bar/.cargo-checksum.json");
+    // Everything is included because `cargo-vendor`
+    // do direct extractions from tarballs
+    // (Some are excluded like `.git` or `.cargo-ok` though.)
     assert!(csum.contains(".include"));
-    assert!(!csum.contains(".exclude"));
-    assert!(!csum.contains(".dotdir/exclude"));
-    // Gitignore doesn't re-include a file in an excluded parent directory,
-    // even if negating it explicitly.
-    assert!(!csum.contains(".dotdir/include"));
+    assert!(csum.contains(".exclude"));
+    assert!(csum.contains(".dotdir/exclude"));
+    assert!(csum.contains(".dotdir/include"));
 }
 
 #[cargo_test]
@@ -1084,20 +1085,37 @@ fn ignore_files() {
         .build();
 
     Package::new("url", "1.4.1")
-        .file("src/lib.rs", "")
+        // These will be vendored
+        .file(".cargo_vcs_info.json", "")
+        .file("Cargo.toml.orig", "")
         .file("foo.orig", "")
-        .file(".gitignore", "")
-        .file(".gitattributes", "")
         .file("foo.rej", "")
+        .file("src/lib.rs", "")
+        // These will not be vendored
+        .file(".cargo-ok", "")
+        .file(".gitattributes", "")
+        .file(".gitignore", "")
         .publish();
 
     p.cargo("vendor --respect-source-config").run();
     let csum = p.read_file("vendor/url/.cargo-checksum.json");
-    assert!(!csum.contains("foo.orig"));
-    assert!(!csum.contains(".gitignore"));
-    assert!(!csum.contains(".gitattributes"));
-    assert!(!csum.contains(".cargo-ok"));
-    assert!(!csum.contains("foo.rej"));
+    assert_e2e().eq(
+        csum,
+        str![[r#"
+{
+  "files": {
+    ".cargo_vcs_info.json": "[..]",
+    "Cargo.toml": "[..]",
+    "Cargo.toml.orig": "[..]",
+    "foo.orig": "[..]",
+    "foo.rej": "[..]",
+    "src/lib.rs": "[..]"
+  },
+  "package": "[..]"
+}
+"#]]
+        .is_json(),
+    );
 }
 
 #[cargo_test]
