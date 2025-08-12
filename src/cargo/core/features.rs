@@ -620,7 +620,32 @@ impl Features {
     ) -> CargoResult<()> {
         let nightly_features_allowed = self.nightly_features_allowed;
         let Some((slot, feature)) = self.status(feature_name) else {
-            bail!("unknown cargo feature `{}`", feature_name)
+            let mut msg = format!("unknown Cargo.toml feature `{feature_name}`\n\n");
+            let mut append_see_docs = true;
+
+            if feature_name.contains('_') {
+                let _ = writeln!(msg, "Feature names must use '-' instead of '_'.");
+                append_see_docs = false;
+            } else {
+                let underscore_name = feature_name.replace('-', "_");
+                if CliUnstable::help()
+                    .iter()
+                    .any(|(option, _)| *option == underscore_name)
+                {
+                    let _ = writeln!(
+                        msg,
+                        "This feature can be enabled via -Z{feature_name} or the `[unstable]` section in config.toml."
+                    );
+                }
+            }
+
+            if append_see_docs {
+                let _ = writeln!(
+                    msg,
+                    "See https://doc.rust-lang.org/nightly/cargo/reference/unstable.html for more information."
+                );
+            }
+            bail!(msg)
         };
 
         if *slot {
@@ -856,6 +881,7 @@ unstable_cli_options!(
     rustdoc_scrape_examples: bool = ("Allows Rustdoc to scrape code examples from reverse-dependencies"),
     sbom: bool = ("Enable the `sbom` option in build config in .cargo/config.toml file"),
     script: bool = ("Enable support for single-file, `.rs` packages"),
+    section_timings: bool = ("Enable support for extended compilation sections in --timings output"),
     separate_nightlies: bool,
     skip_rustdoc_fingerprint: bool,
     target_applies_to_host: bool = ("Enable the `target-applies-to-host` key in the .cargo/config.toml file"),
@@ -1380,6 +1406,7 @@ impl CliUnstable {
             "rustdoc-map" => self.rustdoc_map = parse_empty(k, v)?,
             "rustdoc-scrape-examples" => self.rustdoc_scrape_examples = parse_empty(k, v)?,
             "sbom" => self.sbom = parse_empty(k, v)?,
+            "section-timings" => self.section_timings = parse_empty(k, v)?,
             "separate-nightlies" => self.separate_nightlies = parse_empty(k, v)?,
             "checksum-freshness" => self.checksum_freshness = parse_empty(k, v)?,
             "skip-rustdoc-fingerprint" => self.skip_rustdoc_fingerprint = parse_empty(k, v)?,
