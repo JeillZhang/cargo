@@ -2161,13 +2161,11 @@ fn git_install_reads_workspace_manifest() {
   |
 6 |             incremental = 3
   |                           ^
-  |
 [ERROR] invalid type: integer `3`, expected a boolean
  --> home/.cargo/git/checkouts/foo-[HASH]/[..]/Cargo.toml:6:27
   |
 6 |             incremental = 3
   |                           ^
-  |
 
 "#]])
         .run();
@@ -2785,7 +2783,7 @@ fn dry_run_incompatible_package() {
 }
 
 #[cargo_test]
-fn dry_run_incompatible_package_dependecy() {
+fn dry_run_incompatible_package_dependency() {
     let p = project()
         .file(
             "Cargo.toml",

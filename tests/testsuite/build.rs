@@ -423,7 +423,6 @@ fn cargo_compile_with_invalid_manifest2() {
   |
 3 |                 foo = bar
   |                       ^^^
-  |
 
 "#]])
         .run();
@@ -441,7 +440,6 @@ fn cargo_compile_with_invalid_manifest3() {
   |
 1 | a = bar
   |     ^^^
-  |
 
 "#]])
         .run();
@@ -496,7 +494,6 @@ fn cargo_compile_with_invalid_version() {
   |
 4 |         version = "1.0"
   |                   ^^^^^
-  |
 
 "#]])
         .run();
@@ -516,7 +513,6 @@ fn cargo_compile_with_empty_package_name() {
   |
 3 |         name = ""
   |                ^^
-  |
 
 "#]])
         .run();
@@ -536,7 +532,6 @@ fn cargo_compile_with_invalid_package_name() {
   |
 3 |         name = "foo@bar"
   |                ^^^^^^^^^
-  |
 
 "#]])
         .run();
@@ -1317,7 +1312,6 @@ fn cargo_compile_with_invalid_dep_rename() {
   |
 8 |                 "haha this isn't a valid name 🐛" = { package = "libc", version = "0.1" }
   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
 
 "#]])
         .run();
@@ -4494,7 +4488,7 @@ WRAPPER CALLED: rustc --crate-name foo [..]
 
 /// Checks what happens when both rust-wrapper and rustc-workspace-wrapper are set.
 #[cargo_test]
-fn rustc_wrapper_precendence() {
+fn rustc_wrapper_precedence() {
     let p = project().file("src/lib.rs", "").build();
     let rustc_wrapper = tools::echo_wrapper();
     let ws_wrapper = rustc_wrapper.with_file_name("rustc-ws-wrapper");
