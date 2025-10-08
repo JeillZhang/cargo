@@ -79,6 +79,7 @@ use crate::util::network::http::configure_http_handle;
 use crate::util::network::http::http_handle;
 use crate::util::{CanonicalUrl, closest_msg, internal};
 use crate::util::{Filesystem, IntoUrl, IntoUrlWithBase, Rustc};
+use annotate_snippets::Level;
 use anyhow::{Context as _, anyhow, bail, format_err};
 use cargo_credential::Secret;
 use cargo_util::paths;
@@ -986,47 +987,6 @@ impl GlobalContext {
         }
     }
 
-    /// Get a list of strings.
-    ///
-    /// DO NOT USE outside of the config module. `pub` will be removed in the
-    /// future.
-    ///
-    /// NOTE: this does **not** support environment variables. Use `get` instead
-    /// if you want that.
-    pub fn get_list(&self, key: &str) -> CargoResult<OptValue<Vec<(String, Definition)>>> {
-        let key = ConfigKey::from_str(key);
-        self._get_list(&key)
-    }
-
-    fn _get_list(&self, key: &ConfigKey) -> CargoResult<OptValue<Vec<(String, Definition)>>> {
-        match self.get_cv(key)? {
-            Some(CV::List(val, definition)) => Ok(Some(Value { val, definition })),
-            Some(val) => self.expected("list", key, &val),
-            None => Ok(None),
-        }
-    }
-
-    /// Helper for `StringList` type to get something that is a string or list.
-    fn get_list_or_string(&self, key: &ConfigKey) -> CargoResult<Vec<(String, Definition)>> {
-        let mut res = Vec::new();
-
-        match self.get_cv(key)? {
-            Some(CV::List(val, _def)) => res.extend(val),
-            Some(CV::String(val, def)) => {
-                let split_vs = val.split_whitespace().map(|s| (s.to_string(), def.clone()));
-                res.extend(split_vs);
-            }
-            Some(val) => {
-                return self.expected("string or array of strings", key, &val);
-            }
-            None => {}
-        }
-
-        self.get_env_list(key, &mut res)?;
-
-        Ok(res)
-    }
-
     /// Internal method for getting an environment variable as a list.
     /// If the key is a non-mergeable list and a value is found in the environment, existing values are cleared.
     fn get_env_list(
@@ -1582,13 +1542,15 @@ impl GlobalContext {
                         ))?;
                     }
                 } else {
-                    self.shell().warn(format!(
+                    self.shell().print_report(&[
+                        Level::WARNING.secondary_title(
+                        format!(
                         "`{}` is deprecated in favor of `{filename_without_extension}.toml`",
                         possible.display(),
-                    ))?;
-                    self.shell().note(
-                        format!("if you need to support cargo 1.38 or earlier, you can symlink `{filename_without_extension}` to `{filename_without_extension}.toml`"),
-                    )?;
+                    )).element(Level::HELP.message(
+                        format!("if you need to support cargo 1.38 or earlier, you can symlink `{filename_without_extension}` to `{filename_without_extension}.toml`")))
+
+                    ], false)?;
                 }
             }
 
@@ -1805,6 +1767,17 @@ impl GlobalContext {
                 toolchain_exe.exists().then_some(toolchain_exe)
             })
             .unwrap_or_else(|| PathBuf::from(tool_str))
+    }
+
+    /// Get the `paths` overrides config value.
+    pub fn paths_overrides(&self) -> CargoResult<OptValue<Vec<(String, Definition)>>> {
+        let key = ConfigKey::from_str("paths");
+        // paths overrides cannot be set via env config, so use get_cv here.
+        match self.get_cv(&key)? {
+            Some(CV::List(val, definition)) => Ok(Some(Value { val, definition })),
+            Some(val) => self.expected("list", &key, &val),
+            None => Ok(None),
+        }
     }
 
     pub fn jobserver_from_env(&self) -> Option<&jobserver::Client> {
