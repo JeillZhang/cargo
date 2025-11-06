@@ -23,11 +23,12 @@ use cargo_util_schemas::manifest::ProfileName;
 use cargo_util_schemas::manifest::RegistryName;
 use cargo_util_schemas::manifest::StringOrVec;
 use clap::builder::UnknownArgumentValueParser;
+use clap_complete::ArgValueCandidates;
 use home::cargo_home_with_cwd;
 use indexmap::IndexSet;
 use itertools::Itertools;
 use semver::Version;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::ffi::{OsStr, OsString};
 use std::path::Path;
 use std::path::PathBuf;
@@ -60,7 +61,13 @@ pub trait CommandExt: Sized {
         all: &'static str,
         exclude: &'static str,
     ) -> Self {
-        self.arg_package_spec_no_all(package, all, exclude)._arg(
+        self.arg_package_spec_no_all(
+            package,
+            all,
+            exclude,
+            ArgValueCandidates::new(get_ws_member_candidates),
+        )
+        ._arg(
             flag("all", "Alias for --workspace (deprecated)")
                 .help_heading(heading::PACKAGE_SELECTION),
         )
@@ -74,6 +81,7 @@ pub trait CommandExt: Sized {
         package: &'static str,
         all: &'static str,
         exclude: &'static str,
+        package_completion: ArgValueCandidates,
     ) -> Self {
         let unsupported_short_arg = {
             let value_parser = UnknownArgumentValueParser::suggest_arg("--exclude");
@@ -84,17 +92,28 @@ pub trait CommandExt: Sized {
                 .action(ArgAction::SetTrue)
                 .hide(true)
         };
-        self.arg_package_spec_simple(package)
+        self.arg_package_spec_simple(package, package_completion)
             ._arg(flag("workspace", all).help_heading(heading::PACKAGE_SELECTION))
-            ._arg(multi_opt("exclude", "SPEC", exclude).help_heading(heading::PACKAGE_SELECTION))
+            ._arg(
+                multi_opt("exclude", "SPEC", exclude)
+                    .help_heading(heading::PACKAGE_SELECTION)
+                    .add(clap_complete::ArgValueCandidates::new(
+                        get_ws_member_candidates,
+                    )),
+            )
             ._arg(unsupported_short_arg)
     }
 
-    fn arg_package_spec_simple(self, package: &'static str) -> Self {
+    fn arg_package_spec_simple(
+        self,
+        package: &'static str,
+        package_completion: ArgValueCandidates,
+    ) -> Self {
         self._arg(
             optional_multi_opt("package", "SPEC", package)
                 .short('p')
-                .help_heading(heading::PACKAGE_SELECTION),
+                .help_heading(heading::PACKAGE_SELECTION)
+                .add(package_completion),
         )
     }
 
@@ -103,7 +122,10 @@ pub trait CommandExt: Sized {
             optional_opt("package", package)
                 .short('p')
                 .value_name("SPEC")
-                .help_heading(heading::PACKAGE_SELECTION),
+                .help_heading(heading::PACKAGE_SELECTION)
+                .add(clap_complete::ArgValueCandidates::new(|| {
+                    get_ws_member_candidates()
+                })),
         )
     }
 
@@ -395,13 +417,6 @@ pub trait CommandExt: Sized {
                 ])
                 .value_delimiter(',')
                 .ignore_case(true),
-        )
-    }
-
-    fn arg_build_plan(self) -> Self {
-        self._arg(
-            flag("build-plan", "Output the build plan in JSON (unstable)")
-                .help_heading(heading::COMPILATION_OPTIONS),
         )
     }
 
@@ -819,7 +834,6 @@ Run `{cmd}` to see possible targets."
         )?;
         build_config.message_format = message_format.unwrap_or(MessageFormat::Human);
         build_config.requested_profile = self.get_profile_name("dev", profile_checking)?;
-        build_config.build_plan = self.flag("build-plan");
         build_config.unit_graph = self.flag("unit-graph");
         build_config.future_incompat_report = self.flag("future-incompat-report");
         build_config.compile_time_deps_only = self.flag("compile-time-deps");
@@ -849,10 +863,6 @@ Run `{cmd}` to see possible targets."
             }
         }
 
-        if build_config.build_plan {
-            gctx.cli_unstable()
-                .fail_if_stable_opt("--build-plan", 5579)?;
-        };
         if build_config.unit_graph {
             gctx.cli_unstable()
                 .fail_if_stable_opt("--unit-graph", 8002)?;
@@ -1218,7 +1228,7 @@ fn get_feature_candidates() -> CargoResult<Vec<clap_complete::CompletionCandidat
             feature_candidates.push(
                 clap_complete::CompletionCandidate::new(feature_name)
                     .display_order(Some(order))
-                    .help(Some(format!("(from {})", package_name).into())),
+                    .help(Some(format!("from {}", package_name).into())),
             );
         }
     }
@@ -1243,7 +1253,7 @@ fn get_crate_candidates(kind: TargetKind) -> CargoResult<Vec<clap_complete::Comp
             };
             clap_complete::CompletionCandidate::new(target.name())
                 .display_order(Some(order))
-                .help(Some(format!("(from {})", pkg_name).into()))
+                .help(Some(format!("from {}", pkg_name).into()))
         })
         .collect::<Vec<_>>();
 
@@ -1311,6 +1321,29 @@ fn get_target_triples_from_rustc() -> CargoResult<Vec<clap_complete::CompletionC
         .lines()
         .map(|line| clap_complete::CompletionCandidate::new(line.to_owned()))
         .collect())
+}
+
+pub fn get_ws_member_candidates() -> Vec<clap_complete::CompletionCandidate> {
+    get_ws_member_packages()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|pkg| {
+            clap_complete::CompletionCandidate::new(pkg.name().as_str()).help(
+                pkg.manifest()
+                    .metadata()
+                    .description
+                    .to_owned()
+                    .map(From::from),
+            )
+        })
+        .collect::<Vec<_>>()
+}
+
+fn get_ws_member_packages() -> CargoResult<Vec<Package>> {
+    let gctx = new_gctx_for_completions()?;
+    let ws = Workspace::new(&find_root_manifest_for_wd(gctx.cwd())?, &gctx)?;
+    let packages = ws.members().map(Clone::clone).collect::<Vec<_>>();
+    Ok(packages)
 }
 
 pub fn get_pkg_id_spec_candidates() -> Vec<clap_complete::CompletionCandidate> {
@@ -1398,6 +1431,26 @@ pub fn get_pkg_id_spec_candidates() -> Vec<clap_complete::CompletionCandidate> {
     candidates.extend(duplicate_name_candidates);
 
     candidates
+}
+
+pub fn get_pkg_name_candidates() -> Vec<clap_complete::CompletionCandidate> {
+    let packages: BTreeMap<_, _> = get_packages()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|package| {
+            (
+                package.name(),
+                package.manifest().metadata().description.clone(),
+            )
+        })
+        .collect();
+
+    packages
+        .into_iter()
+        .map(|(name, description)| {
+            clap_complete::CompletionCandidate::new(name.as_str()).help(description.map(From::from))
+        })
+        .collect()
 }
 
 fn get_packages() -> CargoResult<Vec<Package>> {
