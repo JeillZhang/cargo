@@ -309,6 +309,46 @@ fn left_to_right_bottom_to_top() {
 }
 
 #[cargo_test]
+fn nested_include_resolves_relative_to_including_file() {
+    write_config_at(
+        ".cargo/config.toml",
+        "
+        include = '../config/cargo.toml'
+        ",
+    );
+    write_config_at(
+        "config/cargo.toml",
+        "
+        include = 'other.toml'
+        middle = 10
+        ",
+    );
+    write_config_at(
+        "config/other.toml",
+        "
+        nested = 42
+        ",
+    );
+
+    // This should not be included,
+    // because `include` path is resolved relative to the including config
+    // (where the `include` is defined)
+    write_config_at(
+        ".cargo/other.toml",
+        "
+        INVALID = SYNTAX
+        ",
+    );
+
+    let gctx = GlobalContextBuilder::new()
+        .unstable_flag("config-include")
+        .build();
+
+    assert_eq!(gctx.get::<i32>("nested").unwrap(), 42);
+    assert_eq!(gctx.get::<i32>("middle").unwrap(), 10);
+}
+
+#[cargo_test]
 fn missing_file() {
     // Error when there's a missing file.
     write_config_toml("include='missing.toml'");
@@ -681,6 +721,42 @@ Caused by:
 
 Caused by:
   [NOT_FOUND]
+"#]],
+    );
+}
+
+#[cargo_test]
+fn disallow_glob_syntax() {
+    // Reserved for future extension
+    write_config_toml("include = 'config-*.toml'");
+    let gctx = GlobalContextBuilder::new()
+        .unstable_flag("config-include")
+        .build_err();
+    assert_error(
+        gctx.unwrap_err(),
+        str![[r#"
+could not load Cargo configuration
+
+Caused by:
+  expected a config include path without glob patterns, but found `config-*.toml` from `[ROOT]/.cargo/config.toml`
+"#]],
+    );
+}
+
+#[cargo_test]
+fn disallow_template_syntax() {
+    // Reserved for future extension
+    write_config_toml("include = '{workspace-root}/config.toml'");
+    let gctx = GlobalContextBuilder::new()
+        .unstable_flag("config-include")
+        .build_err();
+    assert_error(
+        gctx.unwrap_err(),
+        str![[r#"
+could not load Cargo configuration
+
+Caused by:
+  expected a config include path without template braces, but found `{workspace-root}/config.toml` from `[ROOT]/.cargo/config.toml`
 "#]],
     );
 }
