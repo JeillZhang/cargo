@@ -9,6 +9,7 @@ use crate::util::interning::InternedString;
 use crate::util::{GlobalContext, Progress, ProgressStyle};
 use anyhow::bail;
 use cargo_util::paths;
+use indexmap::IndexSet;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,7 +18,7 @@ use std::rc::Rc;
 pub struct CleanOptions<'gctx> {
     pub gctx: &'gctx GlobalContext,
     /// A list of packages to clean. If empty, everything is cleaned.
-    pub spec: Vec<String>,
+    pub spec: IndexSet<String>,
     /// The target arch triple to clean, or None for the host arch
     pub targets: Vec<String>,
     /// Whether to clean the release directory
@@ -108,7 +109,7 @@ fn clean_specs(
     ws: &Workspace<'_>,
     profiles: &Profiles,
     targets: &[String],
-    spec: &[String],
+    spec: &IndexSet<String>,
     dry_run: bool,
 ) -> CargoResult<()> {
     // Clean specific packages.
@@ -116,17 +117,15 @@ fn clean_specs(
     let target_data = RustcTargetData::new(ws, &requested_kinds)?;
     let (pkg_set, resolve) = ops::resolve_ws(ws, dry_run)?;
     let prof_dir_name = profiles.get_dir_name();
-    let host_layout = Layout::new(ws, None, &prof_dir_name, true)?;
+    let host_layout = Layout::new(ws, None, &prof_dir_name)?;
     // Convert requested kinds to a Vec of layouts.
     let target_layouts: Vec<(CompileKind, Layout)> = requested_kinds
         .into_iter()
         .filter_map(|kind| match kind {
-            CompileKind::Target(target) => {
-                match Layout::new(ws, Some(target), &prof_dir_name, true) {
-                    Ok(layout) => Some(Ok((kind, layout))),
-                    Err(e) => Some(Err(e)),
-                }
-            }
+            CompileKind::Target(target) => match Layout::new(ws, Some(target), &prof_dir_name) {
+                Ok(layout) => Some(Ok((kind, layout))),
+                Err(e) => Some(Err(e)),
+            },
             CompileKind::Host => None,
         })
         .collect::<CargoResult<_>>()?;
