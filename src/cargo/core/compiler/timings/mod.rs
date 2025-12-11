@@ -3,7 +3,7 @@
 //! This module implements some simple tracking information for timing of how
 //! long it takes for different units to compile.
 
-mod report;
+pub mod report;
 
 use super::{CompileMode, Unit};
 use crate::core::PackageId;
@@ -75,9 +75,9 @@ pub struct Timings<'gctx> {
 #[derive(Copy, Clone, serde::Serialize)]
 pub struct CompilationSection {
     /// Start of the section, as an offset in seconds from `UnitTime::start`.
-    start: f64,
+    pub start: f64,
     /// End of the section, as an offset in seconds from `UnitTime::start`.
-    end: Option<f64>,
+    pub end: Option<f64>,
 }
 
 /// Tracking information for an individual unit.
@@ -107,18 +107,18 @@ struct UnitTime {
 ///
 /// This is used by the HTML report's JavaScript to render the pipeline graph.
 #[derive(serde::Serialize)]
-struct UnitData {
-    i: u64,
-    name: String,
-    version: String,
-    mode: String,
-    target: String,
-    features: Vec<String>,
-    start: f64,
-    duration: f64,
-    unblocked_units: Vec<u64>,
-    unblocked_rmeta_units: Vec<u64>,
-    sections: Option<Vec<(report::SectionName, report::SectionData)>>,
+pub struct UnitData {
+    pub i: u64,
+    pub name: String,
+    pub version: String,
+    pub mode: String,
+    pub target: String,
+    pub features: Vec<String>,
+    pub start: f64,
+    pub duration: f64,
+    pub unblocked_units: Vec<u64>,
+    pub unblocked_rmeta_units: Vec<u64>,
+    pub sections: Option<Vec<(report::SectionName, report::SectionData)>>,
 }
 
 impl<'gctx> Timings<'gctx> {
@@ -437,24 +437,27 @@ impl<'gctx> Timings<'gctx> {
                 .iter()
                 .map(|kind| build_runner.bcx.target_data.short_name(kind))
                 .collect::<Vec<_>>();
+            let num_cpus = std::thread::available_parallelism()
+                .ok()
+                .map(|x| x.get() as u64);
 
             let unit_data = report::to_unit_data(&self.unit_times, &self.unit_to_index);
             let concurrency = report::compute_concurrency(&unit_data);
 
             let ctx = report::RenderContext {
-                start: self.start,
-                start_str: &self.start_str,
+                start_str: self.start_str.clone(),
                 root_units: &self.root_targets,
-                profile: &self.profile,
+                profile: self.profile.clone(),
                 total_fresh: self.total_fresh,
                 total_dirty: self.total_dirty,
                 unit_data,
                 concurrency,
                 cpu_usage: &self.cpu_usage,
-                rustc_version,
-                host: &build_runner.bcx.rustc().host,
+                rustc_version: rustc_version.into(),
+                host: build_runner.bcx.rustc().host.to_string(),
                 requested_targets,
                 jobs: build_runner.bcx.jobs(),
+                num_cpus,
                 error,
             };
             report::write_html(ctx, &mut f)?;
