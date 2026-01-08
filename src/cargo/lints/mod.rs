@@ -2,6 +2,7 @@ use crate::core::{Edition, Feature, Features, MaybePackage, Package};
 use crate::{CargoResult, GlobalContext};
 
 use annotate_snippets::AnnotationKind;
+use annotate_snippets::Group;
 use annotate_snippets::Level;
 use annotate_snippets::Snippet;
 use cargo_util_schemas::manifest::TomlLintLevel;
@@ -9,6 +10,7 @@ use cargo_util_schemas::manifest::TomlToolLints;
 use pathdiff::diff_paths;
 
 use std::borrow::Cow;
+use std::cmp::{Reverse, max_by_key};
 use std::fmt::Display;
 use std::ops::Range;
 use std::path::Path;
@@ -16,7 +18,17 @@ use std::path::Path;
 pub mod rules;
 pub use rules::LINTS;
 
-const LINT_GROUPS: &[LintGroup] = &[TEST_DUMMY_UNSTABLE];
+pub const LINT_GROUPS: &[LintGroup] = &[
+    COMPLEXITY,
+    CORRECTNESS,
+    NURSERY,
+    PEDANTIC,
+    PERF,
+    RESTRICTION,
+    STYLE,
+    SUSPICIOUS,
+    TEST_DUMMY_UNSTABLE,
+];
 
 /// Scope at which a lint runs: package-level or workspace-level.
 pub enum ManifestFor<'a> {
@@ -31,14 +43,14 @@ impl ManifestFor<'_> {
         lint.level(pkg_lints, self.edition(), self.unstable_features())
     }
 
-    pub fn contents(&self) -> &str {
+    pub fn contents(&self) -> Option<&str> {
         match self {
             ManifestFor::Package(p) => p.manifest().contents(),
             ManifestFor::Workspace(p) => p.contents(),
         }
     }
 
-    pub fn document(&self) -> &toml::Spanned<toml::de::DeTable<'static>> {
+    pub fn document(&self) -> Option<&toml::Spanned<toml::de::DeTable<'static>>> {
         match self {
             ManifestFor::Package(p) => p.manifest().document(),
             ManifestFor::Workspace(p) => p.document(),
@@ -140,17 +152,12 @@ fn find_lint_or_group<'a>(
     if let Some(lint) = LINTS.iter().find(|l| l.name == name) {
         Some((
             lint.name,
-            &lint.default_level,
+            &lint.primary_group.default_level,
             &lint.edition_lint_opts,
             &lint.feature_gate,
         ))
     } else if let Some(group) = LINT_GROUPS.iter().find(|g| g.name == name) {
-        Some((
-            group.name,
-            &group.default_level,
-            &group.edition_lint_opts,
-            &group.feature_gate,
-        ))
+        Some((group.name, &group.default_level, &None, &group.feature_gate))
     } else {
         None
     }
@@ -164,8 +171,6 @@ fn report_feature_not_enabled(
     error_count: &mut usize,
     gctx: &GlobalContext,
 ) -> CargoResult<()> {
-    let document = manifest.document();
-    let contents = manifest.contents();
     let dash_feature_name = feature_gate.name().replace("_", "-");
     let title = format!("use of unstable lint `{}`", lint_name);
     let label = format!(
@@ -181,19 +186,25 @@ fn report_feature_not_enabled(
         ManifestFor::Package(_) => &["lints", "cargo", lint_name][..],
         ManifestFor::Workspace(_) => &["workspace", "lints", "cargo", lint_name][..],
     };
-    let Some(span) = get_key_value_span(document, key_path) else {
-        // This lint is handled by either package or workspace lint.
-        return Ok(());
-    };
 
-    let report = [Level::ERROR
-        .primary_title(title)
-        .element(
+    let mut error = Group::with_title(Level::ERROR.primary_title(title));
+
+    if let Some(document) = manifest.document()
+        && let Some(contents) = manifest.contents()
+    {
+        let Some(span) = get_key_value_span(document, key_path) else {
+            // This lint is handled by either package or workspace lint.
+            return Ok(());
+        };
+
+        error = error.element(
             Snippet::source(contents)
                 .path(manifest_path)
                 .annotation(AnnotationKind::Primary.span(span.key).label(label)),
         )
-        .element(Level::HELP.message(help))];
+    }
+
+    let report = [error.element(Level::HELP.message(help))];
 
     *error_count += 1;
     gctx.shell().print_report(&report, true)?;
@@ -262,25 +273,88 @@ pub struct LintGroup {
     pub name: &'static str,
     pub default_level: LintLevel,
     pub desc: &'static str,
-    pub edition_lint_opts: Option<(Edition, LintLevel)>,
     pub feature_gate: Option<&'static Feature>,
+    pub hidden: bool,
 }
+
+const COMPLEXITY: LintGroup = LintGroup {
+    name: "complexity",
+    desc: "code that does something simple but in a complex way",
+    default_level: LintLevel::Warn,
+    feature_gate: None,
+    hidden: false,
+};
+
+const CORRECTNESS: LintGroup = LintGroup {
+    name: "correctness",
+    desc: "code that is outright wrong or useless",
+    default_level: LintLevel::Deny,
+    feature_gate: None,
+    hidden: false,
+};
+
+const NURSERY: LintGroup = LintGroup {
+    name: "nursery",
+    desc: "new lints that are still under development",
+    default_level: LintLevel::Allow,
+    feature_gate: None,
+    hidden: false,
+};
+
+const PEDANTIC: LintGroup = LintGroup {
+    name: "pedantic",
+    desc: "lints which are rather strict or have occasional false positives",
+    default_level: LintLevel::Allow,
+    feature_gate: None,
+    hidden: false,
+};
+
+const PERF: LintGroup = LintGroup {
+    name: "perf",
+    desc: "code that can be written to run faster",
+    default_level: LintLevel::Warn,
+    feature_gate: None,
+    hidden: false,
+};
+
+const RESTRICTION: LintGroup = LintGroup {
+    name: "restriction",
+    desc: "lints which prevent the use of Cargo features",
+    default_level: LintLevel::Allow,
+    feature_gate: None,
+    hidden: false,
+};
+
+const STYLE: LintGroup = LintGroup {
+    name: "style",
+    desc: "code that should be written in a more idiomatic way",
+    default_level: LintLevel::Warn,
+    feature_gate: None,
+    hidden: false,
+};
+
+const SUSPICIOUS: LintGroup = LintGroup {
+    name: "suspicious",
+    desc: "code that is most likely wrong or useless",
+    default_level: LintLevel::Warn,
+    feature_gate: None,
+    hidden: false,
+};
 
 /// This lint group is only to be used for testing purposes
 const TEST_DUMMY_UNSTABLE: LintGroup = LintGroup {
     name: "test_dummy_unstable",
     desc: "test_dummy_unstable is meant to only be used in tests",
     default_level: LintLevel::Allow,
-    edition_lint_opts: None,
     feature_gate: Some(Feature::test_dummy_unstable()),
+    hidden: true,
 };
 
 #[derive(Copy, Clone, Debug)]
 pub struct Lint {
     pub name: &'static str,
     pub desc: &'static str,
-    pub groups: &'static [LintGroup],
-    pub default_level: LintLevel,
+    pub primary_group: &'static LintGroup,
     pub edition_lint_opts: Option<(Edition, LintLevel)>,
     pub feature_gate: Option<&'static Feature>,
     /// This is a markdown formatted string that will be used when generating
@@ -305,33 +379,28 @@ impl Lint {
             return (LintLevel::Allow, LintLevelReason::Default);
         }
 
-        self.groups
-            .iter()
-            .map(|g| {
-                (
-                    g.name,
-                    level_priority(
-                        g.name,
-                        g.default_level,
-                        g.edition_lint_opts,
-                        pkg_lints,
-                        edition,
-                    ),
-                )
-            })
-            .chain(std::iter::once((
-                self.name,
-                level_priority(
-                    self.name,
-                    self.default_level,
-                    self.edition_lint_opts,
-                    pkg_lints,
-                    edition,
-                ),
-            )))
-            .max_by_key(|(n, (l, _, p))| (l == &LintLevel::Forbid, *p, std::cmp::Reverse(*n)))
-            .map(|(_, (l, r, _))| (l, r))
-            .unwrap()
+        let lint_level_priority = level_priority(
+            self.name,
+            self.primary_group.default_level,
+            self.edition_lint_opts,
+            pkg_lints,
+            edition,
+        );
+
+        let group_level_priority = level_priority(
+            self.primary_group.name,
+            self.primary_group.default_level,
+            None,
+            pkg_lints,
+            edition,
+        );
+
+        let (_, (l, r, _)) = max_by_key(
+            (self.name, lint_level_priority),
+            (self.primary_group.name, group_level_priority),
+            |(n, (l, _, p))| (l == &LintLevel::Forbid, *p, Reverse(*n)),
+        );
+        (l, r)
     }
 
     fn emitted_source(&self, lint_level: LintLevel, reason: LintLevelReason) -> String {
