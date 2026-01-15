@@ -314,9 +314,9 @@ impl BuildDirLayout {
         if !self.is_new_layout {
             paths::create_dir_all(&self.deps)?;
             paths::create_dir_all(&self.fingerprint)?;
+            paths::create_dir_all(&self.examples)?;
         }
         paths::create_dir_all(&self.incremental)?;
-        paths::create_dir_all(&self.examples)?;
         paths::create_dir_all(&self.build)?;
 
         Ok(())
@@ -369,7 +369,7 @@ impl BuildDirLayout {
     /// Fetch the build script path.
     pub fn build_script(&self, pkg_dir: &str) -> PathBuf {
         if self.is_new_layout {
-            self.build_unit(pkg_dir).join("build-script")
+            self.deps(pkg_dir)
         } else {
             self.build().join(pkg_dir)
         }
@@ -377,7 +377,7 @@ impl BuildDirLayout {
     /// Fetch the build script execution path.
     pub fn build_script_execution(&self, pkg_dir: &str) -> PathBuf {
         if self.is_new_layout {
-            self.build_unit(pkg_dir).join("build-script-execution")
+            self.build_unit(pkg_dir).join("build-script")
         } else {
             self.build().join(pkg_dir)
         }
