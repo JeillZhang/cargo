@@ -171,7 +171,11 @@ fn extract_man(subcommand: &str, extension: &str) -> Option<Vec<u8>> {
 /// display it.
 fn write_and_spawn(name: &str, contents: &[u8], command: &str) -> CargoResult<()> {
     let prefix = format!("cargo-{}.", name);
-    let mut tmp = tempfile::Builder::new().prefix(&prefix).tempfile()?;
+    let suffix = if command == "man" { ".1" } else { "" };
+    let mut tmp = tempfile::Builder::new()
+        .prefix(&prefix)
+        .suffix(suffix)
+        .tempfile()?;
     let f = tmp.as_file_mut();
     f.write_all(contents)?;
     f.flush()?;

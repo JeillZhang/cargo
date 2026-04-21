@@ -1656,7 +1656,22 @@ fn is_short_hash_of(rev: &str, oid: Oid) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::absolute_submodule_url;
+    use super::*;
+
+    #[test]
+    fn github_fast_path_full_hash_returns_needs_fetch() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let mut repo = git2::Repository::init_bare(temp_dir.path()).unwrap();
+        let full_hash = "c9040898c9183ddbb9402dcbf749ed06d6ea90ad";
+        let reference = GitReference::Rev(full_hash.to_string());
+        let gctx = GlobalContext::default().unwrap();
+        let expected_oid = rev_to_oid(full_hash).unwrap();
+
+        let result =
+            github_fast_path(&mut repo, "https://github.com/user/repo", &reference, &gctx).unwrap();
+
+        assert!(matches!(result, FastPathRev::NeedsFetch(oid) if oid == expected_oid));
+    }
 
     #[test]
     fn test_absolute_submodule_url() {

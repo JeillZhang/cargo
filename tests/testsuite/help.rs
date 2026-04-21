@@ -119,6 +119,36 @@ fn help_man() {
 }
 
 #[cargo_test]
+fn help_man_temp_file_extension() {
+    let p = project()
+        .at("man")
+        .file("Cargo.toml", &basic_manifest("man", "1.0.0"))
+        .file(
+            "src/main.rs",
+            r#"
+                fn main() {
+                    let path = std::env::args().nth(1).unwrap();
+                    if path.ends_with(".1") {
+                        println!("has .1 extension");
+                    } else {
+                        println!("no .1 extension");
+                    }
+                }
+            "#,
+        )
+        .build();
+    p.cargo("build").run();
+
+    cargo_process("help build")
+        .env("PATH", &p.target_debug_dir())
+        .with_stdout_data(str![[r#"
+has .1 extension
+
+"#]])
+        .run();
+}
+
+#[cargo_test]
 fn help_alias() {
     // Check that `help some_alias` will resolve.
     help_with_man_and_path("", "b", "build", Path::new(""));

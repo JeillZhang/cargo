@@ -7,7 +7,7 @@ use cargo_util_terminal::report::Patch;
 use cargo_util_terminal::report::Snippet;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
-use tracing::trace;
+use tracing::{debug, instrument, trace};
 
 use super::BuildRunner;
 use super::unit::Unit;
@@ -30,13 +30,11 @@ pub struct UnusedDepState {
 }
 
 impl UnusedDepState {
+    #[instrument(name = "UnusedDepState::new", skip_all)]
     pub fn new(build_runner: &mut BuildRunner<'_, '_>) -> Self {
-        let mut states = IndexMap::<_, IndexMap<_, DependenciesState>>::new();
-
-        let roots = &build_runner.bcx.roots;
-
         // Find all units for a package that can report unused externs
         let mut root_build_script_builds = IndexSet::new();
+        let roots = &build_runner.bcx.roots;
         for root in roots.iter() {
             for build_script_run in build_runner.unit_deps(root).iter() {
                 if !build_script_run.unit.target.is_custom_build()
@@ -62,6 +60,7 @@ impl UnusedDepState {
             "selected dep kinds: {:?}",
             build_runner.bcx.selected_dep_kinds
         );
+        let mut states = IndexMap::<_, IndexMap<_, DependenciesState>>::new();
         for root in roots.iter().chain(root_build_script_builds.iter()) {
             let pkg_id = root.pkg.package_id();
             let dep_kind = dep_kind_of(root);
@@ -85,7 +84,7 @@ impl UnusedDepState {
                 .or_default()
                 .entry(dep_kind)
                 .or_default();
-            state.needed_units += 1;
+            *state.needed_units.get_or_insert_default() += 1;
             for dep in build_runner.unit_deps(root).iter() {
                 trace!(
                     "    => {} (deps={})",
@@ -108,16 +107,26 @@ impl UnusedDepState {
 
     pub fn record_unused_externs_for_unit(&mut self, unit: &Unit, unused_externs: Vec<String>) {
         let pkg_id = unit.pkg.package_id();
-        let kind = dep_kind_of(unit);
-        if let Some(state) = self.states.get_mut(&pkg_id).and_then(|s| s.get_mut(&kind)) {
-            state
-                .unused_externs
-                .entry(unit.clone())
-                .or_default()
-                .extend(unused_externs.into_iter().map(|s| InternedString::new(&s)));
-        }
+        let dep_kind = dep_kind_of(unit);
+        trace!(
+            "pkg {} v{} ({dep_kind:?}): unused externs {unused_externs:?}",
+            pkg_id.name(),
+            pkg_id.version(),
+        );
+        let state = self
+            .states
+            .entry(pkg_id)
+            .or_default()
+            .entry(dep_kind)
+            .or_default();
+        state
+            .unused_externs
+            .entry(unit.clone())
+            .or_default()
+            .extend(unused_externs.into_iter().map(|s| InternedString::new(&s)));
     }
 
+    #[instrument(skip_all)]
     pub fn emit_unused_warnings(
         &self,
         warn_count: &mut usize,
@@ -146,6 +155,15 @@ impl UnusedDepState {
             );
 
             if lint_level == LintLevel::Allow {
+                for (dep_kind, state) in states.iter() {
+                    for ext in state.unused_externs.values().flatten() {
+                        debug!(
+                            "pkg {} v{} ({dep_kind:?}): ignoring unused extern `{ext}`, lint is allowed",
+                            pkg_id.name(),
+                            pkg_id.version(),
+                        );
+                    }
+                }
                 continue;
             }
 
@@ -169,16 +187,29 @@ impl UnusedDepState {
             let manifest_path = rel_cwd_manifest_path(pkg.manifest_path(), build_runner.bcx.gctx);
             let mut lint_count = 0;
             for (dep_kind, state) in states.iter() {
-                if state.unused_externs.len() != state.needed_units {
+                let Some(needed_units) = state.needed_units else {
+                    // not one we care to report
+                    for ext in state.unused_externs.values().flatten() {
+                        debug!(
+                            "pkg {} v{} ({dep_kind:?}): ignoring unused extern `{ext}`, untracked dependent",
+                            pkg_id.name(),
+                            pkg_id.version(),
+                        );
+                    }
+                    continue;
+                };
+                if state.unused_externs.len() != needed_units {
                     // Some compilations errored without printing the unused externs.
                     // Don't print the warning in order to reduce false positive
                     // spam during errors.
-                    trace!(
-                        "pkg {} v{} ({dep_kind:?}): ignoring unused deps due to {} outstanding units",
-                        pkg_id.name(),
-                        pkg_id.version(),
-                        state.needed_units
-                    );
+                    for ext in state.unused_externs.values().flatten() {
+                        debug!(
+                            "pkg {} v{} ({dep_kind:?}): ignoring unused extern `{ext}`, {} outstanding units",
+                            pkg_id.name(),
+                            pkg_id.version(),
+                            needed_units - state.unused_externs.len()
+                        );
+                    }
                     continue;
                 }
 
@@ -205,11 +236,10 @@ impl UnusedDepState {
                     };
                     for dependency in dependency {
                         if ignore.contains(&dependency.name_in_toml()) {
-                            trace!(
-                                "pkg {} v{} ({dep_kind:?}): extern {} is ignored",
+                            debug!(
+                                "pkg {} v{} ({dep_kind:?}): ignoring unused extern `{ext}`, requested in manifest",
                                 pkg_id.name(),
                                 pkg_id.version(),
-                                ext
                             );
                             continue;
                         }
@@ -293,7 +323,7 @@ struct DependenciesState {
     ///
     /// To avoid warning in cases where we didn't,
     /// e.g. if a [`Unit`] errored and didn't report unused externs.
-    needed_units: usize,
+    needed_units: Option<usize>,
     /// As reported by rustc
     unused_externs: IndexMap<Unit, Vec<InternedString>>,
 }
