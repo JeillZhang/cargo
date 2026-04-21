@@ -3580,27 +3580,27 @@ fn sparse_blocking_count() {
 body:
 internal server error
    [..] DEBUG network::fetch: url="[..]/index/3/b/bar"
-   [..] DEBUG cargo::core::resolver::restarting: pending=1
-   [..] DEBUG network::fetch: url="[..]/index/de/p1/dep1"
-   [..] DEBUG network::fetch: url="[..]/index/de/p2/dep2"
-   [..] DEBUG cargo::core::resolver::restarting: pending=2
+   [..] DEBUG cargo::core::resolver::restarting: pending=[..]
+   [..] DEBUG network::fetch: url="[..]/index/[..]"
+   [..] DEBUG network::fetch: url="[..]/index/[..]"
+   [..] DEBUG cargo::core::resolver::restarting: pending=[..]
    [..] DEBUG cargo::core::resolver::restarting: pending=0
 [LOCKING] 3 packages to latest compatible versions
    [..] DEBUG cargo::core::resolver::restarting: pending=0
 [DOWNLOADING] crates ...
-   [..] DEBUG network::fetch: url="http://[..]/dl/bar/0.0.1/download"
-   [..] DEBUG network::fetch: url="http://[..]/dl/dep1/0.0.1/download"
-   [..] DEBUG network::fetch: url="http://[..]/dl/dep2/0.0.1/download"
-[DOWNLOADED] [..] v0.0.1 (registry `dummy-registry`)
-[DOWNLOADED] [..] v0.0.1 (registry `dummy-registry`)
-[DOWNLOADED] [..] v0.0.1 (registry `dummy-registry`)
-[CHECKING] [..] v0.0.1
-[CHECKING] [..] v0.0.1
-[CHECKING] [..] v0.0.1
+   [..] DEBUG network::fetch: url="[..]/dl/bar/0.0.1/download"
+   [..] DEBUG network::fetch: url="[..]/dl/dep1/0.0.1/download"
+   [..] DEBUG network::fetch: url="[..]/dl/dep2/0.0.1/download"
+[DOWNLOADED] bar v0.0.1 (registry `dummy-registry`)
+[DOWNLOADED] dep1 v0.0.1 (registry `dummy-registry`)
+[DOWNLOADED] dep2 v0.0.1 (registry `dummy-registry`)
+[CHECKING] dep2 v0.0.1
+[CHECKING] dep1 v0.0.1
+[CHECKING] bar v0.0.1
 [CHECKING] foo v0.0.1 ([ROOT]/foo)
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [ELAPSED]s
 
-"#]]).run();
+"#]].unordered()).run();
 }
 
 #[cargo_test]

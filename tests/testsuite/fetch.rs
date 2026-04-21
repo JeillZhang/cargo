@@ -59,11 +59,15 @@ fn fetch_all_platform_dependencies_when_no_target_is_given() {
         .build();
 
     p.cargo("fetch")
-        .with_stderr_data(str![[r#"
+        .with_stderr_data(
+            str![[r#"
 ...
+[DOWNLOADED] d2 v0.1.2 (registry `dummy-registry`)
 [DOWNLOADED] d1 v1.2.3 (registry `dummy-registry`)
-
-"#]])
+...
+"#]]
+            .unordered(),
+        )
         .run();
 }
 

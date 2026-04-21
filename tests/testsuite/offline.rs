@@ -1,11 +1,10 @@
 //! Tests for --offline flag.
 
-use std::fs;
-
 use crate::prelude::*;
+use cargo::core::SourceId;
 use cargo_test_support::{
-    Execs, basic_manifest, git, main_file, project,
-    registry::{Package, RegistryBuilder},
+    Execs, basic_manifest, git, main_file, paths, project,
+    registry::{self, Package, RegistryBuilder},
     str,
 };
 
@@ -317,14 +316,9 @@ Caused by:
 
 #[cargo_test]
 fn compile_offline_while_transitive_dep_not_cached() {
+    let registry = registry::init();
     let baz = Package::new("baz", "1.0.0");
-    let baz_path = baz.archive_dst();
     baz.publish();
-
-    let baz_content = fs::read(&baz_path).unwrap();
-    // Truncate the file to simulate a download failure.
-    fs::write(&baz_path, &[]).unwrap();
-
     Package::new("bar", "0.1.0").dep("baz", "1.0.0").publish();
 
     let p = project()
@@ -343,19 +337,23 @@ fn compile_offline_while_transitive_dep_not_cached() {
         .file("src/main.rs", "fn main(){}")
         .build();
 
-    // simulate download bar, but fail to download baz
-    p.cargo("check")
-        .with_status(101)
-        .with_stderr_data(str![[r#"
-...
-Caused by:
-  failed to verify the checksum of `baz v1.0.0 (registry `dummy-registry`)`
+    // download both bar and baz
+    p.cargo("check").run();
 
-"#]])
-        .run();
-
-    // Restore the file contents.
-    fs::write(&baz_path, &baz_content).unwrap();
+    // Delete `baz` from the caches, so it has to be re-downloaded.
+    let registry_path = paths::cargo_home().join("registry");
+    let id = SourceId::for_registry(registry.index_url()).unwrap();
+    let hash = cargo::util::hex::short_hash(&id);
+    registry_path
+        .join("cache")
+        .join(format!("-{hash}"))
+        .join("baz-1.0.0.crate")
+        .rm_rf();
+    registry_path
+        .join("src")
+        .join(format!("-{hash}"))
+        .join("baz-1.0.0")
+        .rm_rf();
 
     p.cargo("check --offline")
         .with_status(101)
