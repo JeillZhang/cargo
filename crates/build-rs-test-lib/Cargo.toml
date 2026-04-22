@@ -9,3 +9,6 @@ unstable = ["build-rs/unstable"]
 
 [build-dependencies]
 build-rs.workspace = true
+
+[lints]
+# not inheriting since this breaks many norms for a short and simple "test"
