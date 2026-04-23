@@ -2734,7 +2734,6 @@ supported tools: {}",
 }
 
 static EXPECTED_LINT_CONFIG: &[(&str, &str, &str)] = &[
-    ("cargo", "unused_dependencies", "ignore"),
     // forwarded to rustc/rustdoc
     ("rust", "unexpected_cfgs", "check-cfg"),
 ];

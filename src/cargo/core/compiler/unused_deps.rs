@@ -98,7 +98,13 @@ impl UnusedDepState {
                 } else {
                     continue;
                 };
-                state.externs.insert(dep.extern_crate_name, manifest_deps);
+                state.externs.insert(
+                    dep.extern_crate_name,
+                    ExternState {
+                        unit: dep.unit.clone(),
+                        manifest_deps,
+                    },
+                );
             }
         }
 
@@ -167,23 +173,6 @@ impl UnusedDepState {
                 continue;
             }
 
-            let mut ignore = Vec::new();
-            if let Some(unused_dependencies) = cargo_lints.get("unused_dependencies") {
-                if let Some(config) = unused_dependencies.config() {
-                    if let Some(config_ignore) = config.get("ignore") {
-                        if let Ok(config_ignore) =
-                            toml::Value::try_into::<Vec<InternedString>>(config_ignore.clone())
-                        {
-                            ignore = config_ignore
-                        } else {
-                            anyhow::bail!(
-                                "`lints.cargo.unused_dependencies.ignore` must be a list of string"
-                            );
-                        }
-                    }
-                }
-            }
-
             let manifest_path = rel_cwd_manifest_path(pkg.manifest_path(), build_runner.bcx.gctx);
             let mut lint_count = 0;
             for (dep_kind, state) in states.iter() {
@@ -213,7 +202,7 @@ impl UnusedDepState {
                     continue;
                 }
 
-                for (ext, dependency) in &state.externs {
+                for (ext, extern_state) in &state.externs {
                     if state
                         .unused_externs
                         .values()
@@ -227,23 +216,22 @@ impl UnusedDepState {
                         );
                         continue;
                     }
+                    if is_transitive_dep(&extern_state.unit, &state.unused_externs, build_runner) {
+                        debug!(
+                            "pkg {} v{} ({dep_kind:?}): ignoring unused extern `{ext}`, may be activating features",
+                            pkg_id.name(),
+                            pkg_id.version(),
+                        );
+                        continue;
+                    }
 
                     // Implicitly added dependencies (in the same crate) aren't interesting
-                    let dependency = if let Some(dependency) = dependency {
+                    let dependency = if let Some(dependency) = &extern_state.manifest_deps {
                         dependency
                     } else {
                         continue;
                     };
                     for dependency in dependency {
-                        if ignore.contains(&dependency.name_in_toml()) {
-                            debug!(
-                                "pkg {} v{} ({dep_kind:?}): ignoring unused extern `{ext}`, requested in manifest",
-                                pkg_id.name(),
-                                pkg_id.version(),
-                            );
-                            continue;
-                        }
-
                         let manifest = pkg.manifest();
                         let document = manifest.document();
                         let contents = manifest.contents();
@@ -318,7 +306,7 @@ impl UnusedDepState {
 #[derive(Default)]
 struct DependenciesState {
     /// All declared dependencies
-    externs: IndexMap<InternedString, Option<Vec<Dependency>>>,
+    externs: IndexMap<InternedString, ExternState>,
     /// Expected [`Self::unused_externs`] entries to know we've received them all
     ///
     /// To avoid warning in cases where we didn't,
@@ -326,6 +314,12 @@ struct DependenciesState {
     needed_units: Option<usize>,
     /// As reported by rustc
     unused_externs: IndexMap<Unit, Vec<InternedString>>,
+}
+
+#[derive(Clone)]
+struct ExternState {
+    unit: Unit,
+    manifest_deps: Option<Vec<Dependency>>,
 }
 
 fn dep_kind_of(unit: &Unit) -> DepKind {
@@ -351,4 +345,35 @@ fn unit_desc(unit: &Unit) -> String {
         unit.target.kind().description(),
         unit.mode,
     )
+}
+
+#[instrument(skip_all)]
+fn is_transitive_dep(
+    direct_dep_unit: &Unit,
+    unused_externs: &IndexMap<Unit, Vec<InternedString>>,
+    build_runner: &mut BuildRunner<'_, '_>,
+) -> bool {
+    let mut queue = std::collections::VecDeque::new();
+    for root_unit in unused_externs.keys() {
+        for unit_dep in build_runner.unit_deps(root_unit) {
+            if root_unit.pkg.package_id() == unit_dep.unit.pkg.package_id() {
+                continue;
+            }
+            if unit_dep.unit == *direct_dep_unit {
+                continue;
+            }
+            queue.push_back(&unit_dep.unit);
+        }
+    }
+
+    while let Some(dep_unit) = queue.pop_front() {
+        for unit_dep in build_runner.unit_deps(dep_unit) {
+            if unit_dep.unit == *direct_dep_unit {
+                return true;
+            }
+            queue.push_back(&unit_dep.unit);
+        }
+    }
+
+    false
 }

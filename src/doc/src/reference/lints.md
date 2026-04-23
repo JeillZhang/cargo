@@ -470,10 +470,6 @@ Should be written as:
 name = "foo"
 ```
 
-### Configuration
-
-- `ignore`: a list of dependency names to allow the lint on
-
 
 ## `unused_workspace_dependencies`
 Group: `suspicious`

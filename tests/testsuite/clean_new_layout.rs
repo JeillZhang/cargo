@@ -1345,3 +1345,21 @@ fn config_target_dir_tag_valid() {
         .masquerade_as_nightly_cargo(&["new build-dir layout"])
         .run();
 }
+
+#[cargo_test]
+fn explicit_target_dir_not_exists() {
+    let p = project()
+        .file("Cargo.toml", &basic_bin_manifest("foo"))
+        .file("src/foo.rs", &main_file(r#""i am foo""#, &[]))
+        .build();
+
+    // should not error if target_dir does not exist
+    p.cargo("clean --target-dir bar")
+        .arg("-Zbuild-dir-new-layout")
+        .masquerade_as_nightly_cargo(&["new build-dir layout"])
+        .with_stderr_data(str![[r#"
+[REMOVED] 0 files
+
+"#]])
+        .run();
+}

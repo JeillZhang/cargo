@@ -73,8 +73,10 @@ pub fn clean(ws: &Workspace<'_>, opts: &CleanOptions<'_>) -> CargoResult<()> {
     if opts.explicit_target_dir_arg {
         let target_dir_path = target_dir.as_path_unlocked();
 
-        // check if the target directory has a valid CACHEDIR.TAG
-        if let Err(err) = validate_target_dir_tag(target_dir_path) {
+        // perform validation on target_dir only if it exists and check if the target directory has a valid CACHEDIR.TAG
+        if target_dir_path.exists()
+            && let Err(err) = validate_target_dir_tag(target_dir_path)
+        {
             // if target_dir was passed explicitly via --target-dir, then hard error if validation fails
             let title = format!("cannot clean `{}`: {err}", target_dir_path.display());
             let report = [Level::ERROR
