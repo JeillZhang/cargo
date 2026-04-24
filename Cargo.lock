@@ -527,8 +527,6 @@ version = "0.4.12"
 name = "cargo-test-support"
 version = "0.11.3"
 dependencies = [
- "anstream",
- "anstyle",
  "anyhow",
  "cargo-test-macro",
  "cargo-util",
@@ -4305,7 +4303,7 @@ checksum = "781442f29170c5c93b7185ad559492601acdc71d5bb0706f5868094f45cfcd08"
 
 [[package]]
 name = "rustfix"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow",
  "proptest",
@@ -4314,8 +4312,6 @@ dependencies = [
  "snapbox",
  "tempfile",
  "thiserror 2.0.18",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -5927,7 +5923,6 @@ name = "xtask-spellcheck"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "cargo-util",
  "cargo_metadata",
  "clap",
  "semver",

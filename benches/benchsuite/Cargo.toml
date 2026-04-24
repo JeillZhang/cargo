@@ -11,11 +11,13 @@ publish = false
 cargo.workspace = true
 cargo-util.workspace = true
 cargo-util-terminal.workspace = true
-criterion.workspace = true
 flate2.workspace = true
 rand.workspace = true
 tar.workspace = true
 url.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
 
 [lib]
 bench = false

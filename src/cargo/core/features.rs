@@ -913,7 +913,6 @@ unstable_cli_options!(
     target_applies_to_host: bool = ("Enable the `target-applies-to-host` key in the .cargo/config.toml file"),
     trim_paths: bool = ("Enable the `trim-paths` option in profiles"),
     unstable_options: bool = ("Allow the usage of unstable options"),
-    warnings: bool = ("Allow use of the build.warnings config key"),
 );
 
 const STABILIZED_COMPILE_PROGRESS: &str = "The progress bar is now always \
@@ -1001,6 +1000,8 @@ const STABILIZED_BUILD_DIR: &str = "build.build-dir is now always enabled.";
 const STABILIZED_CONFIG_INCLUDE: &str = "The `include` config key is now always available";
 
 const STABILIZED_LOCKFILE_PATH: &str = "The `lockfile-path` config key is now always available";
+
+const STABILIZED_WARNINGS: &str = "The `build.warnings` config key is now always available";
 
 fn deserialize_comma_separated_list<'de, D>(
     deserializer: D,
@@ -1391,6 +1392,7 @@ impl CliUnstable {
             "build-dir" => stabilized_warn(k, "1.91", STABILIZED_BUILD_DIR),
             "config-include" => stabilized_warn(k, "1.93", STABILIZED_CONFIG_INCLUDE),
             "lockfile-path" => stabilized_warn(k, "1.97", STABILIZED_LOCKFILE_PATH),
+            "warnings" => stabilized_warn(k, "1.97", STABILIZED_WARNINGS),
 
             // Unstable features
             // Sorted alphabetically:
@@ -1457,7 +1459,6 @@ impl CliUnstable {
             "target-applies-to-host" => self.target_applies_to_host = parse_empty(k, v)?,
             "panic-immediate-abort" => self.panic_immediate_abort = parse_empty(k, v)?,
             "unstable-options" => self.unstable_options = parse_empty(k, v)?,
-            "warnings" => self.warnings = parse_empty(k, v)?,
             _ => bail!(
                 "\
             unknown `-Z` flag specified: {k}\n\n\

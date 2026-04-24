@@ -8,8 +8,6 @@ repository.workspace = true
 description = "Testing framework for Cargo's testsuite."
 
 [dependencies]
-anstream.workspace = true
-anstyle.workspace = true
 anyhow.workspace = true
 cargo-test-macro.workspace = true
 cargo-util.workspace = true
