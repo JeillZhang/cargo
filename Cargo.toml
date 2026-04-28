@@ -43,7 +43,7 @@ clap = "4.6.0"
 clap_complete = { version = "4.6.0", features = ["unstable-dynamic"] }
 color-print = "0.3.7"
 core-foundation = { version = "0.10.1", features = ["mac_os_10_7_support"] }
-crates-io = { version = "0.40.20", path = "crates/crates-io" }
+crates-io = { version = "0.41.0", path = "crates/crates-io" }
 criterion = { version = "0.8.2", features = ["html_reports"] }
 curl = "0.4.49"
 curl-sys = "0.4.87"
@@ -54,8 +54,8 @@ futures-timer = "3.0.3"
 git2 = "0.20.4"
 git2-curl = "0.21.0"
 # When updating this, also see if `gix-transport` further down needs updating or some auth-related tests will fail.
-gix = { version = "0.82.0", default-features = false, features = ["sha1", "progress-tree", "parallel", "dirwalk", "status"] }
-gix-transport = "0.56.0"
+gix = { version = "0.83.0", default-features = false, features = ["sha1", "progress-tree", "parallel", "dirwalk", "status"] }
+gix-transport = "0.57.0"
 glob = "0.3.3"
 handlebars = { version = "6.4.0", features = ["dir_source"] }
 heck = "0.5.0"

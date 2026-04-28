@@ -2420,10 +2420,8 @@ fn api_error_code() {
 Caused by:
   failed to get a 200 OK response, got 400
   headers:
-  	HTTP/1.1 400
-  	Content-Length: 7
-  	Connection: close
-  	
+  	content-length: 7
+  	connection: close
   body:
   go away
 
@@ -4584,11 +4582,9 @@ fn workspace_publish_rate_limit_error() {
 Caused by:
   failed to get a 200 OK response, got 429
   headers:
-  	HTTP/1.1 429
-  	Content-Length: 172
-  	Connection: close
-  	Retry-After: 3600
-  	
+  	content-length: 172
+  	connection: close
+  	retry-after: 3600
   body:
   You have published too many new crates in a short period of time. Please try again after Fri, 18 Jul 2025 20:00:34 GMT or email help@crates.io to have your limit increased.
 

@@ -373,7 +373,7 @@ fn unused_dep_normal_but_implicit_used_dep_dev() {
             "tests/foo.rs",
             r#"
             #[test]
-            fn foo {
+            fn foo() {
                 use used_dev as _;
             }
             "#,
@@ -400,6 +400,27 @@ fn unused_dep_normal_but_implicit_used_dep_dev() {
   |
 9 -             used_dev = "0.1.0"
   |
+[FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [ELAPSED]s
+
+"#]])
+        .run();
+
+    p.cargo("check -Zcargo-lints --all-targets")
+        .masquerade_as_nightly_cargo(&["cargo-lints"])
+        .with_stderr_data(str![[r#"
+[CHECKING] foo v0.1.0 ([ROOT]/foo)
+[WARNING] unused dependency
+ --> Cargo.toml:9:13
+  |
+9 |             used_dev = "0.1.0"
+  |             ^^^^^^^^^^^^^^^^^^
+  |
+  = [NOTE] `cargo::unused_dependencies` is set to `warn` in `[lints]`
+[HELP] remove the dependency
+  |
+9 -             used_dev = "0.1.0"
+  |
+[HELP] to still use for development builds, move to `dev-dependencies`
 [FINISHED] `dev` profile [unoptimized + debuginfo] target(s) in [ELAPSED]s
 
 "#]])

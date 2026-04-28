@@ -2399,7 +2399,7 @@ fn on_stderr_line_inner(
 
     #[derive(serde::Deserialize)]
     struct UnusedExterns {
-        unused_extern_names: Vec<String>,
+        unused_extern_names: std::collections::BTreeSet<InternedString>,
     }
     if let Ok(uext) = serde_json::from_str::<UnusedExterns>(compiler_message.get()) {
         trace!(

@@ -9,6 +9,7 @@ use crate::core::compiler::locking::LockKey;
 use crate::core::compiler::timings::SectionTiming;
 use crate::util::Queue;
 use crate::util::context::WarningHandling;
+use crate::util::interning::InternedString;
 use crate::{CargoResult, core::compiler::locking::LockManager};
 
 use super::{Artifact, DiagDedupe, Job, JobId, Message};
@@ -224,7 +225,7 @@ impl<'a, 'gctx> JobState<'a, 'gctx> {
     ///
     /// This is useful for checking unused dependencies.
     /// Should only be called once, as the compiler only emits it once per compilation.
-    pub fn unused_externs(&self, unused_externs: Vec<String>) {
+    pub fn unused_externs(&self, unused_externs: std::collections::BTreeSet<InternedString>) {
         self.messages
             .push(Message::UnusedExterns(self.id, unused_externs));
     }

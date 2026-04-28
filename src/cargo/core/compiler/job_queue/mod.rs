@@ -149,6 +149,7 @@ use crate::util::CargoResult;
 use crate::util::context::WarningHandling;
 use crate::util::diagnostic_server::{self, DiagnosticPrinter};
 use crate::util::errors::AlreadyPrintedError;
+use crate::util::interning::InternedString;
 use crate::util::machine_message::{self, Message as _};
 use crate::util::{self, internal};
 use crate::util::{DependencyQueue, GlobalContext, Progress, ProgressStyle, Queue};
@@ -387,7 +388,7 @@ enum Message {
     Finish(JobId, Artifact, CargoResult<()>),
     FutureIncompatReport(JobId, Vec<FutureBreakageItem>),
     SectionTiming(JobId, SectionTiming),
-    UnusedExterns(JobId, Vec<String>),
+    UnusedExterns(JobId, std::collections::BTreeSet<InternedString>),
 }
 
 impl<'gctx> JobQueue<'gctx> {

@@ -25,7 +25,7 @@ use crate::util::auth;
 use crate::util::cache_lock::CacheLockMode;
 use crate::util::context::{GlobalContext, PathAndArgs};
 use crate::util::errors::CargoResult;
-use crate::util::network::http::http_handle;
+use crate::util::network::http_async;
 
 pub use self::info::info;
 pub use self::login::registry_login;
@@ -126,7 +126,7 @@ fn registry<'gctx>(
     reg_or_index: Option<&RegistryOrIndex>,
     force_update: bool,
     token_required: Option<Operation<'_>>,
-) -> CargoResult<(Registry, RegistrySource<'gctx>)> {
+) -> CargoResult<(Registry<RegistryClient<'gctx>>, RegistrySource<'gctx>)> {
     let is_index = reg_or_index.map(|v| v.is_index()).unwrap_or_default();
     if is_index && token_required.is_some() && token_from_cmdline.is_none() {
         bail!("command-line argument --index requires --token to be specified");
@@ -162,7 +162,7 @@ fn registry<'gctx>(
     } else {
         None
     };
-    let handle = http_handle(gctx)?;
+    let handle = RegistryClient(gctx.http_async()?);
     Ok((
         Registry::new_handle(api_host, token, handle, cfg.auth_required),
         src,
@@ -360,5 +360,15 @@ pub(crate) fn infer_registry(pkgs: &[&Package]) -> CargoResult<Option<RegistryOr
         } else {
             bail!("--registry is required because not all `package.publish` settings agree",);
         }
+    }
+}
+
+struct RegistryClient<'gctx>(&'gctx http_async::Client);
+
+impl<'gctx> crates_io::HttpClient for RegistryClient<'gctx> {
+    type Error = http_async::Error;
+
+    fn request(&self, req: http::Request<Vec<u8>>) -> Result<http::Response<Vec<u8>>, Self::Error> {
+        self.0.request_blocking(req)
     }
 }
