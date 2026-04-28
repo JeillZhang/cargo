@@ -26,33 +26,13 @@
 
 pub mod env;
 
-#[cfg(target_os = "windows")]
-mod windows;
-
 use std::io;
 use std::path::{Path, PathBuf};
 
 /// Returns the path of the current user's home directory using environment
 /// variables or OS-specific APIs.
 ///
-/// # Unix
-///
-/// Returns the value of the `HOME` environment variable if it is set
-/// **even** if it is an empty string. Otherwise, it tries to determine the
-/// home directory by invoking the [`getpwuid_r`][getpwuid] function with
-/// the UID of the current user.
-///
-/// [getpwuid]: https://linux.die.net/man/3/getpwuid_r
-///
-/// # Windows
-///
-/// Returns the value of the `USERPROFILE` environment variable if it is set
-/// **and** it is not an empty string. Otherwise, it tries to determine the
-/// home directory by invoking the [`SHGetKnownFolderPath`][shgkfp] function with
-/// [`FOLDERID_Profile`][knownfolderid].
-///
-/// [shgkfp]: https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shgetknownfolderpath
-/// [knownfolderid]: https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid
+/// This function is just a wrapper around [`std::env::home_dir`](https://doc.rust-lang.org/std/env/fn.home_dir.html)
 ///
 /// # Examples
 ///
@@ -64,15 +44,6 @@ use std::path::{Path, PathBuf};
 /// ```
 pub fn home_dir() -> Option<PathBuf> {
     env::home_dir_with_env(&env::OS_ENV)
-}
-
-#[cfg(windows)]
-use windows::home_dir_inner;
-
-#[cfg(unix)]
-fn home_dir_inner() -> Option<PathBuf> {
-    #[allow(deprecated)]
-    std::env::home_dir()
 }
 
 /// Returns the storage directory used by Cargo, often known as

@@ -30,7 +30,7 @@ pub trait Env {
 pub struct OsEnv;
 impl Env for OsEnv {
     fn home_dir(&self) -> Option<PathBuf> {
-        crate::home_dir_inner()
+        std::env::home_dir()
     }
     fn current_dir(&self) -> io::Result<PathBuf> {
         std::env::current_dir()
