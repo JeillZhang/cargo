@@ -38,6 +38,12 @@ These lints are all set to the 'warn' level by default.
 - [`unused_workspace_dependencies`](#unused_workspace_dependencies)
 - [`unused_workspace_package_fields`](#unused_workspace_package_fields)
 
+## Deny-by-default
+
+These lints are all set to the 'deny' level by default.
+- [`text_direction_codepoint_in_comment`](#text_direction_codepoint_in_comment)
+- [`text_direction_codepoint_in_literal`](#text_direction_codepoint_in_literal)
+
 ## `blanket_hint_mostly_unused`
 Group: `suspicious`
 
@@ -392,6 +398,48 @@ Should be written as:
 [package]
 name = "foo"
 ```
+
+
+## `text_direction_codepoint_in_comment`
+Group: `correctness`
+
+Level: `deny`
+
+MSRV: `1.79.0`
+
+### What it does
+Detects Unicode codepoints in manifest comments that change the visual representation of text on screen
+in a way that does not correspond to their on memory representation.
+
+### Why it is bad
+Unicode allows changing the visual flow of text on screen
+in order to support scripts that are written right-to-left,
+but a specially crafted comment can make code that will be compiled appear to be part of a comment,
+depending on the software used to read the code.
+To avoid potential problems or confusion,
+such as in CVE-2021-42574,
+by default we deny their use.
+
+
+## `text_direction_codepoint_in_literal`
+Group: `correctness`
+
+Level: `deny`
+
+MSRV: `1.79.0`
+
+### What it does
+Detects Unicode codepoints in literals in manifests that change the visual representation of text on screen
+in a way that does not correspond to their on memory representation.
+
+### Why it is bad
+Unicode allows changing the visual flow of text on screen
+in order to support scripts that are written right-to-left,
+but a specially crafted literal can make code that will be compiled appear to be part of a literal,
+depending on the software used to read the code.
+To avoid potential problems or confusion,
+such as in CVE-2021-42574,
+by default we deny their use.
 
 
 ## `unknown_lints`

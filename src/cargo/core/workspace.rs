@@ -34,6 +34,8 @@ use crate::lints::rules::non_snake_case_features;
 use crate::lints::rules::non_snake_case_packages;
 use crate::lints::rules::redundant_homepage;
 use crate::lints::rules::redundant_readme;
+use crate::lints::rules::text_direction_codepoint_in_comment;
+use crate::lints::rules::text_direction_codepoint_in_literal;
 use crate::lints::rules::unused_build_dependencies_no_build_rs;
 use crate::lints::rules::unused_workspace_dependencies;
 use crate::lints::rules::unused_workspace_package_fields;
@@ -1401,6 +1403,20 @@ impl<'gctx> Workspace<'gctx> {
                 &mut run_error_count,
                 self.gctx,
             )?;
+            text_direction_codepoint_in_comment(
+                pkg.into(),
+                &path,
+                &cargo_lints,
+                &mut run_error_count,
+                self.gctx,
+            )?;
+            text_direction_codepoint_in_literal(
+                pkg.into(),
+                &path,
+                &cargo_lints,
+                &mut run_error_count,
+                self.gctx,
+            )?;
 
             if run_error_count > 0 {
                 let plural = if run_error_count == 1 { "" } else { "s" };
@@ -1470,6 +1486,20 @@ impl<'gctx> Workspace<'gctx> {
             implicit_minimum_version_req_ws(
                 self,
                 self.root_maybe(),
+                self.root_manifest(),
+                &cargo_lints,
+                &mut run_error_count,
+                self.gctx,
+            )?;
+            text_direction_codepoint_in_comment(
+                (self, self.root_maybe()).into(),
+                self.root_manifest(),
+                &cargo_lints,
+                &mut run_error_count,
+                self.gctx,
+            )?;
+            text_direction_codepoint_in_literal(
+                (self, self.root_maybe()).into(),
                 self.root_manifest(),
                 &cargo_lints,
                 &mut run_error_count,
