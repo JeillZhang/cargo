@@ -459,7 +459,7 @@ recursive_example = "rr --example recursions"
 
 The `[build]` table controls build-time operations and compiler settings.
 
-### `build.warnings`
+#### `build.warnings`
 * Type: string
 * Default: `"warn"`
 * Environment: `CARGO_BUILD_WARNINGS`
