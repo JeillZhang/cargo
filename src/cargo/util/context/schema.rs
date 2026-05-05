@@ -422,7 +422,7 @@ impl<'de> Deserialize<'de> for ProgressConfig {
 enum EnvConfigValueInner {
     Simple(String),
     WithOptions {
-        value: String,
+        value: ConfigRelativePath,
         force: bool,
         relative: bool,
     },
@@ -435,7 +435,7 @@ impl<'de> Deserialize<'de> for EnvConfigValueInner {
     {
         #[derive(Deserialize)]
         struct WithOptions {
-            value: String,
+            value: ConfigRelativePath,
             #[serde(default)]
             force: bool,
             #[serde(default)]
@@ -473,13 +473,13 @@ impl<'de> Deserialize<'de> for EnvConfigValueInner {
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
 pub struct EnvConfigValue {
-    inner: Value<EnvConfigValueInner>,
+    inner: EnvConfigValueInner,
 }
 
 impl EnvConfigValue {
     /// Whether this value should override existing environment variables.
     pub fn is_force(&self) -> bool {
-        match self.inner.val {
+        match self.inner {
             EnvConfigValueInner::Simple(_) => false,
             EnvConfigValueInner::WithOptions { force, .. } => force,
         }
@@ -490,7 +490,7 @@ impl EnvConfigValue {
     /// If `relative = true`,
     /// the value is interpreted as a [`ConfigRelativePath`]-like path.
     pub fn resolve<'a>(&'a self, cwd: &Path) -> Cow<'a, OsStr> {
-        match self.inner.val {
+        match self.inner {
             EnvConfigValueInner::Simple(ref s) => Cow::Borrowed(OsStr::new(s.as_str())),
             EnvConfigValueInner::WithOptions {
                 ref value,
@@ -498,10 +498,10 @@ impl EnvConfigValue {
                 ..
             } => {
                 if relative {
-                    let p = self.inner.definition.root(cwd).join(&value);
+                    let p = value.value().definition.root(cwd).join(value.raw_value());
                     Cow::Owned(p.into_os_string())
                 } else {
-                    Cow::Borrowed(OsStr::new(value.as_str()))
+                    Cow::Borrowed(OsStr::new(value.raw_value()))
                 }
             }
         }

@@ -63,9 +63,6 @@ fn env_invalid() {
 [ERROR] error in [ROOT]/foo/.cargo/config.toml: could not load config key `env.ENV_TEST_BOOL`
 
 Caused by:
-  error in [ROOT]/foo/.cargo/config.toml: could not load config key `env.ENV_TEST_BOOL`
-
-Caused by:
   invalid type: boolean `false`, expected a string or map
 
 "#]])

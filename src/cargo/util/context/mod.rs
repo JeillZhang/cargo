@@ -2347,6 +2347,7 @@ impl ConfigInclude {
             Definition::Environment(_) | Definition::Cli(None) | Definition::BuiltIn => gctx.cwd(),
         }
         .join(&self.path);
+        let abs_path = paths::normalize_path(&abs_path);
 
         if self.optional && !abs_path.exists() {
             tracing::info!(
