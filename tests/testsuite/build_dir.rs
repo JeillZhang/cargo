@@ -521,7 +521,7 @@ fn cargo_rustdoc_json_should_output_to_target_dir() {
         )
         .build();
 
-    p.cargo("-Zbuild-dir-new-layout rustdoc -Zunstable-options --output-format json")
+    p.cargo("-Zbuild-dir-new-layout -Zunstable-options rustdoc --output-format json")
         .masquerade_as_nightly_cargo(&["new build-dir layout", "rustdoc-output-format"])
         .enable_mac_dsym()
         .run();
@@ -537,10 +537,10 @@ fn cargo_rustdoc_json_should_output_to_target_dir() {
 [ROOT]/foo/build-dir/.rustdoc_fingerprint.json
 [ROOT]/foo/build-dir/CACHEDIR.TAG
 [ROOT]/foo/build-dir/debug/.cargo-build-lock
-[ROOT]/foo/build-dir/debug/.fingerprint/foo-[HASH]/doc-lib-foo
-[ROOT]/foo/build-dir/debug/.fingerprint/foo-[HASH]/doc-lib-foo.json
-[ROOT]/foo/build-dir/debug/.fingerprint/foo-[HASH]/invoked.timestamp
-[ROOT]/foo/build-dir/debug/build/foo-[HASH]/out/foo.json
+[ROOT]/foo/build-dir/debug/build/foo/[HASH]/fingerprint/doc-lib-foo
+[ROOT]/foo/build-dir/debug/build/foo/[HASH]/fingerprint/doc-lib-foo.json
+[ROOT]/foo/build-dir/debug/build/foo/[HASH]/fingerprint/invoked.timestamp
+[ROOT]/foo/build-dir/debug/build/foo/[HASH]/out/foo.json
 
 "#
     ]);
